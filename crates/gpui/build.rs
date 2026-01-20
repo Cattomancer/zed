@@ -133,6 +133,10 @@ mod macos {
             "ShadowInputIndex".into(),
             "Shadow".into(),
             "QuadInputIndex".into(),
+            "InstancedRectInputIndex".into(),
+            "InstancedRect".into(),
+            "InstancedLineInputIndex".into(),
+            "LineSegmentInstance".into(),
             "Underline".into(),
             "UnderlineInputIndex".into(),
             "Quad".into(),
@@ -295,6 +299,8 @@ mod windows {
             "underline",
             "monochrome_sprite",
             "polychrome_sprite",
+            "instanced_rect",
+            "instanced_line",
         ];
 
         let rust_binding_path = format!("{}/shaders_bytes.rs", out_dir);

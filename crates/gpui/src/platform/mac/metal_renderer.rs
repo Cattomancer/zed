@@ -522,6 +522,8 @@ impl MetalRenderer {
                     viewport_size,
                     command_encoder,
                 ),
+                PrimitiveBatch::InstancedRects(_batches) => Ok(()),
+                PrimitiveBatch::InstancedLines(_batches) => Ok(()),
             };
             if !ok {
                 command_encoder.end_encoding();
