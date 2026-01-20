@@ -3,10 +3,9 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use self::util::ResultExt;
 use anyhow::{Context, Result};
-use util::ResultExt;
 use windows::{
-    core::{s, Interface},
     Win32::{
         Foundation::HWND,
         Graphics::{
@@ -17,6 +16,7 @@ use windows::{
             Dxgi::{Common::*, *},
         },
     },
+    core::{Interface, s},
 };
 
 use crate::{
@@ -575,25 +575,21 @@ impl DirectXRenderer {
     }
 
     fn draw_instanced_rects(&mut self, batches: &[InstancedRects]) -> Result<()> {
-        let devices = self.devices.as_ref().context("devices missing")?;
-        let resources = self.resources.as_ref().context("resources missing")?;
         self.pipelines.instanced_rect_pipeline.draw(
-            &devices.device,
-            &devices.device_context,
-            slice::from_ref(&resources.viewport),
-            slice::from_ref(&self.globals.global_params_buffer),
+            &self.devices.device,
+            &self.devices.device_context,
+            &self.resources.viewport,
+            &self.globals.global_params_buffer,
             batches,
         )
     }
 
     fn draw_instanced_lines(&mut self, batches: &[InstancedLines]) -> Result<()> {
-        let devices = self.devices.as_ref().context("devices missing")?;
-        let resources = self.resources.as_ref().context("resources missing")?;
         self.pipelines.instanced_line_pipeline.draw(
-            &devices.device,
-            &devices.device_context,
-            slice::from_ref(&resources.viewport),
-            slice::from_ref(&self.globals.global_params_buffer),
+            &self.devices.device,
+            &self.devices.device_context,
+            &self.resources.viewport,
+            &self.globals.global_params_buffer,
             batches,
         )
     }
@@ -2047,11 +2043,11 @@ pub(crate) mod shader_resources {
 
     #[cfg(debug_assertions)]
     use windows::{
-        core::{HSTRING, PCSTR},
         Win32::Graphics::Direct3D::{
-            Fxc::{D3DCompileFromFile, D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION},
+            Fxc::{D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION, D3DCompileFromFile},
             ID3DBlob,
         },
+        core::{HSTRING, PCSTR},
     };
 
     #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -2247,7 +2243,7 @@ mod nvidia {
     };
 
     use anyhow::Result;
-    use windows::{core::s, Win32::System::LibraryLoader::GetProcAddress};
+    use windows::{Win32::System::LibraryLoader::GetProcAddress, core::s};
 
     use crate::with_dll_library;
 
@@ -2314,7 +2310,7 @@ mod amd {
     use std::os::raw::{c_char, c_int, c_void};
 
     use anyhow::Result;
-    use windows::{core::s, Win32::System::LibraryLoader::GetProcAddress};
+    use windows::{Win32::System::LibraryLoader::GetProcAddress, core::s};
 
     use crate::with_dll_library;
 
@@ -2407,8 +2403,8 @@ mod amd {
 
 mod dxgi {
     use windows::{
-        core::Interface,
         Win32::Graphics::Dxgi::{IDXGIAdapter1, IDXGIDevice},
+        core::Interface,
     };
 
     pub(super) fn get_driver_version(adapter: &IDXGIAdapter1) -> anyhow::Result<String> {
