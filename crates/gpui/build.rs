@@ -1,6 +1,5 @@
 #![allow(clippy::disallowed_methods, reason = "build scripts are exempt")]
 #![cfg_attr(any(not(target_os = "macos"), feature = "macos-blade"), allow(unused))]
-#![feature(round_char_boundary)]
 
 //TODO: consider generating shader code for WGSL
 //TODO: deprecate "runtime-shaders" and "macos-blade"

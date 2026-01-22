@@ -3,6 +3,7 @@
 #![allow(clippy::type_complexity)] // Not useful, GPUI makes heavy use of callbacks
 #![allow(clippy::collapsible_else_if)] // False positives in platform specific code
 #![allow(unused_mut)] // False positives in platform specific code
+#![feature(round_char_boundary)]
 
 extern crate self as gpui;
 
@@ -83,7 +84,7 @@ pub use elements::*;
 pub use executor::*;
 pub use geometry::*;
 pub use global::*;
-pub use gpui_macros::{AppContext, IntoElement, Render, VisualContext, register_action, test};
+pub use gpui_macros::{register_action, test, AppContext, IntoElement, Render, VisualContext};
 pub use http_client;
 pub use input::*;
 pub use inspector::*;
@@ -110,7 +111,7 @@ pub use taffy::{AvailableSpace, LayoutId};
 #[cfg(any(test, feature = "test-support"))]
 pub use test::*;
 pub use text_system::*;
-pub use util::{FutureExt, Timeout, arc_cow::ArcCow};
+pub use util::{arc_cow::ArcCow, FutureExt, Timeout};
 pub use view::*;
 pub use window::*;
 
