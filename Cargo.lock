@@ -7409,7 +7409,7 @@ dependencies = [
  "filedescriptor",
  "foreign-types 0.5.0",
  "futures 0.3.31",
- "gpui_macros",
+ "gpui-macros",
  "http_client",
  "image",
  "inventory",
@@ -7480,8 +7480,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "gpui_macros"
-version = "0.1.0"
+name = "gpui-macros"
+version = "0.2.0"
 dependencies = [
  "gpui",
  "heck 0.5.0",
@@ -17946,7 +17946,7 @@ dependencies = [
  "component",
  "documented",
  "gpui",
- "gpui_macros",
+ "gpui-macros",
  "icons",
  "itertools 0.14.0",
  "menu",
