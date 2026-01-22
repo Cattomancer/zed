@@ -29,6 +29,23 @@ In the panel you can see the state of your project at a glance—which repositor
 
 Zed monitors your repository so that changes you make on the command line are instantly reflected.
 
+### Configuration
+
+You can configure how Zed hard wraps commit messages with the `preferred-line-length` setting of the "Git Commit" language. The default is `72`, but it can be set to any number of characters `0` or more.
+
+The Git Panel also allows configuring the `soft_wrap` setting to adjust how commit messages display while you are typing them in the Git Panel. The default setting is `editor_width`, however, `none`, `preferred_line_length`, and `bounded` are also options.
+
+#### Example
+
+```json
+"languages": {
+  "Git Commit": {
+    "soft_wrap": "editor_width",
+    "preferred_line_length": 72
+  },
+}
+```
+
 ## Project Diff
 
 You can see all of the changes captured by Git in Zed by opening the Project Diff ({#kb git::Diff}), accessible via the {#action git::Diff} action in the Command Palette or the Git Panel.
@@ -75,6 +92,12 @@ Zed offers two commit textareas:
 As soon as you commit in Zed, in the Git Panel, you'll see a bar right under the commit textarea, which will show the recently submitted commit.
 In there, you can use the "Uncommit" button, which performs the `git reset HEADˆ--soft` command.
 
+### Configuring Commit Line Length
+
+By default, Zed sets the commit line length to `72` but it can be configured in your local `settings.json` file.
+
+Find more information about setting the `preferred-line-length` in the [Configuration](#configuration) section.
+
 ## Stashing
 
 Git stash allows you to temporarily save your uncommitted changes and revert your working directory to a clean state. This is particularly useful when you need to quickly switch branches or pull updates without committing incomplete work.
@@ -115,14 +138,15 @@ To open the stash diff view, select a stash from the stash picker and use the {#
 Zed currently supports LLM-powered commit message generation.
 You can ask AI to generate a commit message by focusing on the message editor within the Git Panel and either clicking on the pencil icon in the bottom left, or reaching for the {#action git::GenerateCommitMessage} ({#kb git::GenerateCommitMessage}) keybinding.
 
-> Note that you need to have an LLM provider configured for billing purposes, either via your own API keys or trialing/paying for Zed's hosted AI models. Visit [the AI configuration page](./ai/configuration.md) to learn how to do so.
+> Note that you need to have an LLM provider configured either via your own API keys or through Zed's hosted AI models.
+> Visit [the AI configuration page](./ai/configuration.md) to learn how to do so.
 
-You can specify your preferred model to use by providing a `commit_message_model` agent setting. See [Feature-specific models](./ai/agent-settings.md#feature-specific-models) for more information.
+You can specify your preferred model to use by providing a `commit_message_model` agent setting.
+See [Feature-specific models](./ai/agent-settings.md#feature-specific-models) for more information.
 
 ```json [settings]
 {
   "agent": {
-    "version": "2",
     "commit_message_model": {
       "provider": "anthropic",
       "model": "claude-3-5-haiku"
@@ -131,9 +155,12 @@ You can specify your preferred model to use by providing a `commit_message_model
 }
 ```
 
+To customize the format of generated commit messages, run {#action agent::OpenRulesLibrary} and select the "Commit message" rule on the left side.
+From there, you can modify the prompt to match your desired format.
+
 <!-- Add media -->
 
-More advanced AI integration with Git features may come in the future.
+Any specific instructions for commit messages added to [Rules files](./ai/rules.md) are also picked up by the model tasked with writing your commit message.
 
 ## Git Integrations
 
@@ -145,6 +172,20 @@ Zed currently supports links to the hosted versions of
 [Bitbucket](https://bitbucket.org),
 [SourceHut](https://sr.ht) and
 [Codeberg](https://codeberg.org).
+
+For self-hosted GitHub, GitLab, or Bitbucket instances, add them to the `git_hosting_providers` setting so commit hashes and permalinks resolve to your domain:
+
+```json [settings]
+{
+  "git_hosting_providers": [
+    {
+      "provider": "gitlab",
+      "name": "Corp GitLab",
+      "base_url": "https://git.example.corp"
+    }
+  ]
+}
+```
 
 Zed also has a Copy Permalink feature to create a permanent link to a code snippet on your Git hosting service.
 These links are useful for sharing a specific line or range of lines in a file at a specific commit.
@@ -179,6 +220,7 @@ When viewing files with changes, Zed displays diff hunks that can be expanded or
 | {#action git::Push}                       | {#kb git::Push}                       |
 | {#action git::ForcePush}                  | {#kb git::ForcePush}                  |
 | {#action git::Pull}                       | {#kb git::Pull}                       |
+| {#action git::PullRebase}                 | {#kb git::PullRebase}                 |
 | {#action git::Fetch}                      | {#kb git::Fetch}                      |
 | {#action git::Diff}                       | {#kb git::Diff}                       |
 | {#action git::Restore}                    | {#kb git::Restore}                    |
