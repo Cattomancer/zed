@@ -19,7 +19,7 @@ use crate::{
     TextStyle, TextStyleRefinement, Transform2D, TransformId, TransformationMatrix, Underline,
     UnderlineStyle, WindowAppearance, WindowBackgroundAppearance, WindowBounds, WindowControls,
     WindowDecorations, WindowOptions, WindowParams, WindowTextSystem, div, point, prelude::*, px,
-    rems, size, transparent_black,
+    rems, size, transparent_black, InstancedRect, LineSegmentInstance, InstancedLines
 };
 use anyhow::{Context as _, Result, anyhow};
 use collections::{FxHashMap, FxHashSet, FxHasher};
@@ -5492,7 +5492,12 @@ impl Window {
             content_mask: content_mask.scale(scale),
             rects: scaled_rects,
         };
-        self.next_frame.scene.insert_primitive(batch);
+        
+        let transform_index = self.transform_stack.current().as_u32();
+        let transform = self.scale_transform_for_scene(transform);
+        let cull = self.should_cull_scene_primitives();
+        
+        self.next_frame.scene.insert_primitive(&mut self.segment_pool, transform, cull);
     }
 
 
@@ -5536,7 +5541,9 @@ impl Window {
             content_mask: content_mask.scale(scale),
             segments: scaled,
         };
-        self.next_frame.scene.insert_primitive(batch);
+        let cull = self.should_cull_scene_primitives();
+        
+        self.next_frame.scene.insert_primitive(&mut self.segment_pool, transform, cull);
     }
 
     /// Paint an underline into the scene for the next frame at the current z-index.

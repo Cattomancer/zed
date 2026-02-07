@@ -316,11 +316,11 @@ impl Scene {
             }
             Primitive::InstancedRects(batch) => {
                 batch.order = order;
-                self.instanced_rects.push(batch.clone());
+                segment.instanced_rects.push(batch.clone());
             }
             Primitive::InstancedLines(batch) => {
                 batch.order = order;
-                self.instanced_lines.push(batch.clone());
+                segment.instanced_lines.push(batch.clone());
             }
         }
 
@@ -383,6 +383,8 @@ impl Scene {
                 }
                 Primitive::Path(path) => path.bounds,
                 Primitive::Surface(surface) => surface.bounds,
+                Primitive::InstancedRects(batch) => batch.bounds,
+                Primitive::InstancedLines(batch) => batch.bounds,
             }
         }
     }
@@ -643,6 +645,8 @@ impl Primitive {
             Primitive::SubpixelSprite(sprite) => sprite.transform_index,
             Primitive::PolychromeSprite(sprite, _) => sprite.transform_index,
             Primitive::Surface(surface) => surface.transform_index,
+            Primitive::InstancedRects(batch) => batch.transform_index,
+            Primitive::InstancedLines(batch) => batch.transform_index,
         }
     }
 }
@@ -978,6 +982,12 @@ impl<'a> Iterator for SegmentBatchIterator<'a> {
                 surfaces: &segment.surfaces,
                 surfaces_start: 0,
                 surfaces_iter: segment.surfaces.iter().peekable(),
+                instanced_rects: &segment.instanced_rects,
+                instanced_rects_start: 0,
+                instanced_rects_iter: segment.instanced_rects.iter().peekable(),
+                instanced_lines: &segment.instanced_lines,
+                instanced_lines_start: 0,
+                instanced_lines_iter: segment.instanced_lines.iter().peekable(),
             });
         }
     }

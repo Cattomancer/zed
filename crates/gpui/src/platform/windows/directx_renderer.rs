@@ -420,7 +420,7 @@ impl DirectXRenderer {
             }
             .context(format!(
                 "scene too large:\
-                {} paths, {} shadows, {} quads, {} underlines, {} mono, {} subpixel, {} poly, {} custom, {} surfaces",
+                {} paths, {} shadows, {} quads, {} underlines, {} mono, {} subpixel, {} poly, {} surfaces, instanced rects {}, instanced lines {}",
                 scene.paths_len(segment_pool),
                 scene.shadows_len(segment_pool),
                 scene.quads_len(segment_pool),
@@ -428,8 +428,10 @@ impl DirectXRenderer {
                 scene.monochrome_sprites_len(segment_pool),
                 scene.subpixel_sprites_len(segment_pool),
                 scene.polychrome_sprites_len(segment_pool),
-                scene.shaders.len(),
+                //scene.shaders.len(),
                 scene.surfaces_len(segment_pool),
+                scene.instanced_rects_len(segment_pool),
+                scene.instanced_lines_len(segment_pool),
             ))?;
         }
         self.present()
@@ -2417,11 +2419,9 @@ pub(crate) mod shader_resources {
 
     use windows::Win32::Graphics::Direct3D::Fxc::D3DCompile;
     #[cfg(debug_assertions)]
-    use windows::{Win32::Graphics::Direct3D::Fxc::D3DCompileFromFile, core::HSTRING};
     use windows::{
         core::{HSTRING, PCSTR},
         Win32::Graphics::Direct3D::{
-
             Fxc::{D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION},
             ID3DBlob,
         },
