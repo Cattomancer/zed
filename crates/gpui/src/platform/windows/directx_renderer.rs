@@ -380,10 +380,6 @@ impl DirectXRenderer {
             WindowBackgroundAppearance::Opaque => [1.0f32; 4],
             _ => [0.0f32; 4],
         })?;
-<<<<<<< HEAD
-        self.pipelines.begin_frame();
-        for batch in scene.batches() {
-=======
 
         let (device, device_context) = {
             let devices = self.devices.as_ref().context("devices missing")?;
@@ -395,7 +391,6 @@ impl DirectXRenderer {
         self.pipelines.begin_frame();
 
         for batch in scene.batches(segment_pool) {
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
             match batch {
                 PrimitiveBatch::Shadows(shadows, transforms) => self.draw_shadows(shadows, transforms),
                 PrimitiveBatch::Quads(quads, transforms) => self.draw_quads(quads, transforms),
@@ -2426,16 +2421,11 @@ pub(crate) mod shader_resources {
     use windows::{
         core::{HSTRING, PCSTR},
         Win32::Graphics::Direct3D::{
-<<<<<<< HEAD
-            Fxc::{D3DCompileFromFile, D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION},
-            ID3DBlob,
-        },
-=======
+
             Fxc::{D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION},
             ID3DBlob,
         },
         core::PCSTR,
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
     };
 
     #[derive(Copy, Clone, Debug, Eq, PartialEq)]

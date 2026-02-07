@@ -11,18 +11,6 @@ use crate::{
     KeyDispatcher, KeyDownEvent, KeyEvent, Keystroke, KeystrokeEvent, LayoutId, MeasurementCache,
     MeasurementKey, Modifiers, ModifiersChangedEvent, MonochromeSprite, MouseButton, MouseEvent,
     MouseMoveEvent, MouseUpEvent, Path, Pixels, PlatformAtlas, PlatformDisplay, PlatformInput,
-<<<<<<< HEAD
-    PlatformInputHandler, PlatformWindow, Point, PolychromeSprite, Priority, PromptButton,
-    PromptLevel, Quad, Render, RenderGlyphParams, RenderImage, RenderImageParams, RenderSvgParams,
-    Replay, ResizeEdge, SMOOTH_SVG_SCALE_FACTOR, SUBPIXEL_VARIANTS_X, SUBPIXEL_VARIANTS_Y,
-    ScaledPixels, Scene, Shadow, SharedString, Size, StrikethroughStyle, Style, SubpixelSprite,
-    SubscriberSet, Subscription, SystemWindowTab, SystemWindowTabController, TabStopMap,
-    TaffyLayoutEngine, Task, TextRenderingMode, TextStyle, TextStyleRefinement,
-    TransformationMatrix, Underline, UnderlineStyle, WindowAppearance, WindowBackgroundAppearance,
-    WindowBounds, WindowControls, WindowDecorations, WindowOptions, WindowParams, WindowTextSystem,
-    point, prelude::*, px, rems, size, transparent_black, InstancedRects, InstancedRect,
-    LineSegmentInstance, InstancedLines,
-=======
     PlatformWindow, Point, PolychromeSprite, Priority, PromptButton, PromptLevel, Quad, Render,
     RenderGlyphParams, RenderImage, RenderImageParams, RenderSvgParams, Replay, ResizeEdge,
     SMOOTH_SVG_SCALE_FACTOR, SUBPIXEL_VARIANTS_X, SUBPIXEL_VARIANTS_Y, ScaledPixels, Scene,
@@ -32,7 +20,6 @@ use crate::{
     UnderlineStyle, WindowAppearance, WindowBackgroundAppearance, WindowBounds, WindowControls,
     WindowDecorations, WindowOptions, WindowParams, WindowTextSystem, div, point, prelude::*, px,
     rems, size, transparent_black,
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
 };
 use anyhow::{Context as _, Result, anyhow};
 use collections::{FxHashMap, FxHashSet, FxHasher};
@@ -879,18 +866,6 @@ pub(crate) struct TooltipRequest {
 }
 
 pub(crate) struct DeferredDraw {
-<<<<<<< HEAD
-    current_view: EntityId,
-    priority: usize,
-    parent_node: DispatchNodeId,
-    element_id_stack: SmallVec<[ElementId; 32]>,
-    text_style_stack: Vec<TextStyleRefinement>,
-    rem_size: Pixels,
-    element: Option<AnyElement>,
-    absolute_offset: Point<Pixels>,
-    prepaint_range: Range<PrepaintStateIndex>,
-    paint_range: Range<PaintIndex>,
-=======
     pub(crate) current_view: EntityId,
     pub(crate) priority: usize,
     pub(crate) text_style_stack: Vec<TextStyleRefinement>,
@@ -911,7 +886,6 @@ pub(crate) struct DeferredDraw {
 struct HitboxesSnapshotEpoch {
     structure_epoch: u64,
     hitbox_epoch: u64,
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
 }
 
 pub(crate) struct Frame {
@@ -4550,34 +4524,6 @@ impl Window {
         let mut element = prompt.view.any_view().into_any();
         let current_view = self.current_view();
 
-<<<<<<< HEAD
-            let prepaint_start = self.prepaint_index();
-            if let Some(element) = deferred_draw.element.as_mut() {
-                self.with_rendered_view(deferred_draw.current_view, |window| {
-                    window.with_rem_size(Some(deferred_draw.rem_size), |window| {
-                        window.with_absolute_element_offset(
-                            deferred_draw.absolute_offset,
-                            |window| {
-                                element.prepaint(window, cx);
-                            },
-                        );
-                    });
-                })
-            } else {
-                self.reuse_prepaint(deferred_draw.prepaint_range.clone());
-            }
-            let prepaint_end = self.prepaint_index();
-            deferred_draw.prepaint_range = prepaint_start..prepaint_end;
-        }
-        assert_eq!(
-            self.next_frame.deferred_draws.len(),
-            0,
-            "cannot call defer_draw during deferred drawing"
-        );
-        self.next_frame.deferred_draws = deferred_draws;
-        self.element_id_stack.clear();
-        self.text_style_stack.clear();
-=======
         // Get or create the prompt fiber root.
         let fiber_id = if let Some(existing) = self.fiber.prompt_overlay_root {
             existing
@@ -4621,7 +4567,6 @@ impl Window {
         // Restore the prompt.
         self.prompt = Some(prompt);
         true
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
     }
 
     /// Prepaint the active drag overlay using the fiber-backed pipeline.
@@ -4635,24 +4580,6 @@ impl Window {
         let offset = self.mouse_position() - active_drag.cursor_offset;
         let current_view = self.current_view();
 
-<<<<<<< HEAD
-            let paint_start = self.paint_index();
-            if let Some(element) = deferred_draw.element.as_mut() {
-                self.with_rendered_view(deferred_draw.current_view, |window| {
-                    window.with_rem_size(Some(deferred_draw.rem_size), |window| {
-                        element.paint(window, cx);
-                    })
-                })
-            } else {
-                self.reuse_paint(deferred_draw.paint_range.clone());
-            }
-            let paint_end = self.paint_index();
-            deferred_draw.paint_range = paint_start..paint_end;
-        }
-        self.next_frame.deferred_draws = deferred_draws;
-        self.element_id_stack.clear();
-    }
-=======
         // Get or create the drag fiber root.
         let fiber_id = if let Some(existing) = self.fiber.drag_overlay_root {
             existing
@@ -4661,7 +4588,6 @@ impl Window {
             self.fiber.drag_overlay_root = Some(new_root);
             new_root
         };
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
 
         // Expand wrapper elements BEFORE reconciliation.
         element.expand_wrappers(self, cx);
@@ -4677,26 +4603,6 @@ impl Window {
         self.prepare_detached_root_for_layout(fiber_id, cx);
         self.compute_layout_for_fiber(fiber_id, AvailableSpace::min_size(), cx);
 
-<<<<<<< HEAD
-        self.next_frame.deferred_draws.extend(
-            self.rendered_frame.deferred_draws
-                [range.start.deferred_draws_index..range.end.deferred_draws_index]
-                .iter()
-                .map(|deferred_draw| DeferredDraw {
-                    current_view: deferred_draw.current_view,
-                    parent_node: reused_subtree.refresh_node_id(deferred_draw.parent_node),
-                    element_id_stack: deferred_draw.element_id_stack.clone(),
-                    text_style_stack: deferred_draw.text_style_stack.clone(),
-                    rem_size: deferred_draw.rem_size,
-                    priority: deferred_draw.priority,
-                    element: None,
-                    absolute_offset: deferred_draw.absolute_offset,
-                    prepaint_range: deferred_draw.prepaint_range.clone(),
-                    paint_range: deferred_draw.paint_range.clone(),
-                }),
-        );
-    }
-=======
         // Prepaint the fiber tree at the computed offset.
         self.with_rendered_view(current_view, |window| {
             let mut prepaint_cx = context::PrepaintCx::new(window);
@@ -4706,7 +4612,6 @@ impl Window {
                     .prepaint_fiber_tree_internal(fiber_id, cx, true)
             });
         });
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
 
         // Store state for painting.
         self.active_overlay = Some(ActiveOverlay {
@@ -5379,26 +5284,9 @@ impl Window {
         absolute_offset: Point<Pixels>,
         priority: usize,
     ) {
-<<<<<<< HEAD
-        self.invalidator.debug_assert_prepaint();
-        let parent_node = self.next_frame.dispatch_tree.active_node_id().unwrap();
-        self.next_frame.deferred_draws.push(DeferredDraw {
-            current_view: self.current_view(),
-            parent_node,
-            element_id_stack: self.element_id_stack.clone(),
-            text_style_stack: self.text_style_stack.clone(),
-            rem_size: self.rem_size(),
-            priority,
-            element: Some(element),
-            absolute_offset,
-            prepaint_range: PrepaintStateIndex::default()..PrepaintStateIndex::default(),
-            paint_range: PaintIndex::default()..PaintIndex::default(),
-        });
-=======
         self.invalidator.debug_assert_layout_or_prepaint();
         let callsite = core::panic::Location::caller();
         self.with_fiber_cx(|fiber| fiber.defer_draw(element, absolute_offset, priority, callsite));
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
     }
 
     /// Creates a new painting layer for the specified bounds. A "layer" is a batch

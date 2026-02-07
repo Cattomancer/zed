@@ -685,38 +685,6 @@ impl Focusable for ImageView {
 }
 
 impl Render for ImageView {
-<<<<<<< HEAD
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .track_focus(&self.focus_handle(cx))
-            .key_context("ImageViewer")
-            .on_action(cx.listener(Self::zoom_in))
-            .on_action(cx.listener(Self::zoom_out))
-            .on_action(cx.listener(Self::reset_zoom))
-            .on_action(cx.listener(Self::fit_to_view))
-            .on_action(cx.listener(Self::zoom_to_actual_size))
-            .size_full()
-            .relative()
-            .bg(cx.theme().colors().editor_background)
-            .child(
-                div()
-                    .id("image-container")
-                    .size_full()
-                    .overflow_hidden()
-                    .cursor(if self.is_dragging() {
-                        gpui::CursorStyle::ClosedHand
-                    } else {
-                        gpui::CursorStyle::OpenHand
-                    })
-                    .on_scroll_wheel(cx.listener(Self::handle_scroll_wheel))
-                    .on_mouse_down(MouseButton::Left, cx.listener(Self::handle_mouse_down))
-                    .on_mouse_down(MouseButton::Middle, cx.listener(Self::handle_mouse_down))
-                    .on_mouse_up(MouseButton::Left, cx.listener(Self::handle_mouse_up))
-                    .on_mouse_up(MouseButton::Middle, cx.listener(Self::handle_mouse_up))
-                    .on_mouse_move(cx.listener(Self::handle_mouse_move))
-                    .child(ImageContentElement::new(cx.entity())),
-            )
-=======
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let image = self.image_item.read(cx).image.clone();
         let checkered_background =
@@ -792,7 +760,6 @@ impl Render for ImageView {
                         ),
                 ),
         )
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
     }
 }
 

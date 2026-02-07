@@ -21,30 +21,12 @@ pub(crate) type PathVertex_ScaledPixels = PathVertex<ScaledPixels>;
 
 pub(crate) type DrawOrder = u32;
 
-<<<<<<< HEAD
-#[derive(Default)]
-pub(crate) struct Scene {
-    pub(crate) paint_operations: Vec<PaintOperation>,
-    primitive_bounds: BoundsTree<ScaledPixels>,
-    layer_stack: Vec<DrawOrder>,
-    pub(crate) shadows: Vec<Shadow>,
-    pub(crate) quads: Vec<Quad>,
-    pub(crate) paths: Vec<Path<ScaledPixels>>,
-    pub(crate) underlines: Vec<Underline>,
-    pub(crate) monochrome_sprites: Vec<MonochromeSprite>,
-    pub(crate) subpixel_sprites: Vec<SubpixelSprite>,
-    pub(crate) polychrome_sprites: Vec<PolychromeSprite>,
-    pub(crate) surfaces: Vec<PaintSurface>,
-    pub(crate) instanced_rects: Vec<InstancedRects>,
-    pub(crate) instanced_lines: Vec<InstancedLines>,
-=======
 new_key_type! { pub(crate) struct SceneSegmentId; }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum SceneSegmentRef {
     Fiber(SceneSegmentId),
     Transient,
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
 }
 
 /// Shared storage for fiber scene segments that persists across frame swaps.
@@ -405,22 +387,6 @@ impl Scene {
         }
     }
 
-<<<<<<< HEAD
-    pub fn finish(&mut self) {
-        self.shadows.sort_by_key(|shadow| shadow.order);
-        self.quads.sort_by_key(|quad| quad.order);
-        self.paths.sort_by_key(|path| path.order);
-        self.underlines.sort_by_key(|underline| underline.order);
-        self.monochrome_sprites
-            .sort_by_key(|sprite| (sprite.order, sprite.tile.tile_id));
-        self.subpixel_sprites
-            .sort_by_key(|sprite| (sprite.order, sprite.tile.tile_id));
-        self.polychrome_sprites
-            .sort_by_key(|sprite| (sprite.order, sprite.tile.tile_id));
-        self.surfaces.sort_by_key(|surface| surface.order);
-        self.instanced_rects.sort_by_key(|b| b.order);
-        self.instanced_lines.sort_by_key(|b| b.order);
-=======
     fn sort_with_aux_by_key<T, U, K: Ord>(
         items: &mut Vec<T>,
         aux: &mut Vec<U>,
@@ -528,7 +494,6 @@ impl Scene {
         }
 
         stats
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
     }
 
     #[cfg_attr(
@@ -538,40 +503,7 @@ impl Scene {
         ),
         allow(dead_code)
     )]
-<<<<<<< HEAD
-    pub(crate) fn batches(&self) -> impl Iterator<Item = PrimitiveBatch<'_>> {
-        BatchIterator {
-            shadows: &self.shadows,
-            shadows_start: 0,
-            shadows_iter: self.shadows.iter().peekable(),
-            quads: &self.quads,
-            quads_start: 0,
-            quads_iter: self.quads.iter().peekable(),
-            paths: &self.paths,
-            paths_start: 0,
-            paths_iter: self.paths.iter().peekable(),
-            underlines: &self.underlines,
-            underlines_start: 0,
-            underlines_iter: self.underlines.iter().peekable(),
-            monochrome_sprites: &self.monochrome_sprites,
-            monochrome_sprites_start: 0,
-            monochrome_sprites_iter: self.monochrome_sprites.iter().peekable(),
-            subpixel_sprites: &self.subpixel_sprites,
-            subpixel_sprites_start: 0,
-            subpixel_sprites_iter: self.subpixel_sprites.iter().peekable(),
-            polychrome_sprites: &self.polychrome_sprites,
-            polychrome_sprites_start: 0,
-            polychrome_sprites_iter: self.polychrome_sprites.iter().peekable(),
-            surfaces: &self.surfaces,
-            surfaces_start: 0,
-            surfaces_iter: self.surfaces.iter().peekable(),
-            instanced_rects: &self.instanced_rects,
-            instanced_rects_start: 0,
-            instanced_rects_iter: self.instanced_rects.iter().peekable(),
-            instanced_lines: &self.instanced_lines,
-            instanced_lines_start: 0,
-            instanced_lines_iter: self.instanced_lines.iter().peekable(),
-=======
+
     pub(crate) fn batches<'a>(
         &'a self,
         pool: &'a SceneSegmentPool,
@@ -581,7 +513,6 @@ impl Scene {
             pool,
             order_index: 0,
             current: None,
->>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
         }
     }
 
