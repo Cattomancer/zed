@@ -329,6 +329,11 @@ impl VisualTestAppContext {
 
     /// Dispatches an action to the given window.
     pub fn dispatch_action(&mut self, window: AnyWindowHandle, action: impl Action) {
+        // Draw the window first to ensure action handlers are registered in the fiber tree
+        self.update_window(window, |_, window, cx| {
+            window.draw(cx);
+        })
+        .ok();
         self.update_window(window, |_, window, cx| {
             window.dispatch_action(action.boxed_clone(), cx);
         })

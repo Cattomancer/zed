@@ -43,7 +43,8 @@ impl Editor {
                 .collect_array()
         };
 
-        let bracket_matches_by_accent = self.visible_excerpts(false, cx).into_iter().fold(
+        let visible_excerpts = self.visible_excerpts(false, cx);
+        let bracket_matches_by_accent = visible_excerpts.into_iter().fold(
             HashMap::default(),
             |mut acc, (excerpt_id, (buffer, _, buffer_range))| {
                 let buffer_snapshot = buffer.read(cx).snapshot();
@@ -164,7 +165,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        DisplayPoint, EditorMode, EditorSnapshot, MoveToBeginning, MoveToEnd, MoveUp,
+        DisplayPoint, EditorMode, EditorSnapshot, MovePageDown, MoveToBeginning, MoveToEnd,
+        MoveUp,
         display_map::{DisplayRow, ToDisplayPoint},
         editor_tests::init_test,
         test::{
@@ -366,11 +368,25 @@ where
         let simple_brackets = (0..rows).map(|_| "ˇ[]\n").collect::<String>();
         let simple_brackets_highlights = (0..rows).map(|_| "«1[]1»\n").collect::<String>();
         cx.set_state(&simple_brackets);
+        // Scroll through all content to colorize all chunks
         cx.update_editor(|editor, window, cx| {
-            editor.move_to_end(&MoveToEnd, window, cx);
+            editor.move_to_beginning(&MoveToBeginning, window, cx);
         });
-        cx.executor().advance_clock(Duration::from_millis(100));
         cx.executor().run_until_parked();
+        cx.update_editor(|editor, _, cx| {
+            editor.colorize_brackets(true, cx);
+        });
+        for _ in 0..10 {
+            cx.update_editor(|editor, window, cx| {
+                editor.move_page_down(&MovePageDown::default(), window, cx);
+            });
+            cx.executor().advance_clock(Duration::from_millis(50));
+            cx.executor().run_until_parked();
+            cx.update_editor(|editor, _window, cx| {
+                editor.colorize_brackets(false, cx);
+            });
+            cx.executor().run_until_parked();
+        }
         assert_eq!(
             format!("{simple_brackets_highlights}\n{footer}"),
             bracket_colors_markup(&mut cx),
@@ -387,18 +403,23 @@ where
             // Force invalidation of bracket cache after reparse
             editor.colorize_brackets(true, cx);
         });
-        // Scroll to beginning to fetch first chunks
+        // Scroll through all content to colorize all chunks
         cx.update_editor(|editor, window, cx| {
             editor.move_to_beginning(&MoveToBeginning, window, cx);
         });
-        cx.executor().advance_clock(Duration::from_millis(100));
+        cx.executor().advance_clock(Duration::from_millis(50));
         cx.executor().run_until_parked();
-        // Scroll to end to fetch remaining chunks
-        cx.update_editor(|editor, window, cx| {
-            editor.move_to_end(&MoveToEnd, window, cx);
-        });
-        cx.executor().advance_clock(Duration::from_millis(100));
-        cx.executor().run_until_parked();
+        for _ in 0..10 {
+            cx.update_editor(|editor, window, cx| {
+                editor.move_page_down(&MovePageDown::default(), window, cx);
+            });
+            cx.executor().advance_clock(Duration::from_millis(50));
+            cx.executor().run_until_parked();
+            cx.update_editor(|editor, _window, cx| {
+                editor.colorize_brackets(false, cx);
+            });
+            cx.executor().run_until_parked();
+        }
         assert_eq!(
             format!("{paired_brackets_highlights}\n{footer}"),
             bracket_colors_markup(&mut cx),
@@ -1281,6 +1302,13 @@ mod foo «1{
             Editor::for_multibuffer(multi_buffer, Some(project.clone()), window, cx)
         });
         cx.executor().advance_clock(Duration::from_millis(100));
+        cx.executor().run_until_parked();
+
+        editor
+            .update(cx, |editor, _window, cx| {
+                editor.colorize_brackets(true, cx);
+            })
+            .unwrap();
         cx.executor().run_until_parked();
 
         let editor_snapshot = editor
