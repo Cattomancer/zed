@@ -353,7 +353,7 @@ impl Interactivity {
         listener: impl Fn(&MouseUpEvent, &mut Window, &mut App) + 'static,
     ) {
         self.mouse_up_listeners
-            .push(Box::new(move |event, phase, hitbox: &Hitbox, window, cx| {
+            .push(Rc::new(move |event, phase, hitbox, window, cx| {
                 if phase == DispatchPhase::Capture && !hitbox.is_hovered(window) {
                     (listener)(event, window, cx)
                 }

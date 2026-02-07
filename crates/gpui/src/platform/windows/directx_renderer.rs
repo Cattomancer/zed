@@ -2419,8 +2419,8 @@ pub(crate) mod shader_resources {
 
     use windows::Win32::Graphics::Direct3D::Fxc::D3DCompile;
     #[cfg(debug_assertions)]
+    use windows::{Win32::Graphics::Direct3D::Fxc::D3DCompileFromFile, core::HSTRING};
     use windows::{
-        core::{HSTRING, PCSTR},
         Win32::Graphics::Direct3D::{
             Fxc::{D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION},
             ID3DBlob,

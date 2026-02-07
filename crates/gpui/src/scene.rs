@@ -645,8 +645,8 @@ impl Primitive {
             Primitive::SubpixelSprite(sprite) => sprite.transform_index,
             Primitive::PolychromeSprite(sprite, _) => sprite.transform_index,
             Primitive::Surface(surface) => surface.transform_index,
-            Primitive::InstancedRects(batch) => batch.transform_index,
-            Primitive::InstancedLines(batch) => batch.transform_index,
+            Primitive::InstancedRects(batch) => batch.content_mask,
+            Primitive::InstancedLines(batch) => batch.content_mask,
         }
     }
 }
@@ -1072,8 +1072,6 @@ impl From<InstancedRects> for Primitive {
         Primitive::InstancedRects(batch)
     }
 }
-
-
 
 #[derive(Debug, Clone)]
 #[repr(C)]
