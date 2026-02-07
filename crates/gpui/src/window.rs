@@ -5489,6 +5489,7 @@ impl Window {
         let batch = InstancedRects {
             order: 0,
             bounds: union_bounds,
+            transform_index: self.transform_stack.current().as_u32(),
             content_mask: content_mask.scale(scale),
             rects: scaled_rects,
         };
@@ -5536,6 +5537,7 @@ impl Window {
         let batch = InstancedLines {
             order: 0,
             bounds: union_bounds,
+            transform_index: self.transform_stack.current().as_u32(),
             content_mask: content_mask.scale(scale),
             segments: scaled,
         };

@@ -645,8 +645,8 @@ impl Primitive {
             Primitive::SubpixelSprite(sprite) => sprite.transform_index,
             Primitive::PolychromeSprite(sprite, _) => sprite.transform_index,
             Primitive::Surface(surface) => surface.transform_index,
-            Primitive::InstancedRects(batch) => batch.content_mask,
-            Primitive::InstancedLines(batch) => batch.content_mask,
+            Primitive::InstancedRects(batch) => batch.transform_index,
+            Primitive::InstancedLines(batch) => batch.transform_index,
         }
     }
 }
@@ -1063,6 +1063,7 @@ pub(crate) struct InstancedRect {
 pub(crate) struct InstancedRects {
     pub order: DrawOrder,
     pub bounds: Bounds<ScaledPixels>,
+    pub transform_index: u32,
     pub content_mask: ContentMask<ScaledPixels>,
     pub rects: Vec<InstancedRect>,
 }
@@ -1090,6 +1091,7 @@ pub(crate) struct LineSegmentInstance {
 pub(crate) struct InstancedLines {
     pub order: DrawOrder,
     pub bounds: Bounds<ScaledPixels>,
+    pub transform_index: u32,
     pub content_mask: ContentMask<ScaledPixels>,
     pub segments: Vec<LineSegmentInstance>,
 }
