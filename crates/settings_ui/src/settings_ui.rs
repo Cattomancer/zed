@@ -7,9 +7,15 @@ use editor::{Editor, EditorEvent};
 use futures::{StreamExt, channel::mpsc};
 use fuzzy::StringMatchCandidate;
 use gpui::{
+<<<<<<< HEAD
     Action, App, AsyncApp, ClipboardItem, DEFAULT_ADDITIONAL_WINDOW_SIZE, Div, Entity, FocusHandle,
     Focusable, Global, KeyContext, ListState, ReadGlobal as _, ScrollHandle, Stateful,
     Subscription, Task, TitlebarOptions, UniformListScrollHandle, WeakEntity, Window, WindowBounds,
+=======
+    Action, App, ClipboardItem, DEFAULT_ADDITIONAL_WINDOW_SIZE, Div, Entity, FocusHandle,
+    Focusable, Global, KeyContext, ListState, ReadGlobal as _, ScrollHandle,
+    Subscription, Task, TitlebarOptions, UniformListScrollHandle, Window, WindowBounds,
+>>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
     WindowHandle, WindowOptions, actions, div, list, point, prelude::*, px, uniform_list,
 };
 
@@ -256,7 +262,7 @@ struct SettingFieldRenderer {
                         bool,
                         &mut Window,
                         &mut Context<SettingsWindow>,
-                    ) -> Stateful<Div>,
+                    ) -> Div,
                 >,
             >,
         >,
@@ -309,7 +315,7 @@ impl SettingFieldRenderer {
             bool,
             &mut Window,
             &mut Context<SettingsWindow>,
-        ) -> Stateful<Div>
+        ) -> Div
         + 'static,
     ) -> &mut Self {
         let key = TypeId::of::<T>();
@@ -825,7 +831,7 @@ impl SettingsPageItem {
     ) -> AnyElement {
         let file = settings_window.current_file.clone();
 
-        let apply_padding = |element: Stateful<Div>| -> Stateful<Div> {
+        let apply_padding = |element: Div| -> Div {
             let element = element.pt_4();
             if is_last {
                 element.pb_10()
@@ -1100,7 +1106,7 @@ fn render_settings_item(
     control: AnyElement,
     sub_field: bool,
     cx: &mut Context<'_, SettingsWindow>,
-) -> Stateful<Div> {
+) -> Div {
     let (found_in_file, _) = setting_item.field.file_set_in(file.clone(), cx);
     let file_set_in = SettingsUiFile::from_settings(found_in_file.clone());
 
@@ -2955,7 +2961,7 @@ impl SettingsWindow {
 
     fn render_sub_page_items_in<'a, Items>(
         &self,
-        page_content: Stateful<Div>,
+        page_content: Div,
         items: Items,
         window: &mut Window,
         cx: &mut Context<SettingsWindow>,

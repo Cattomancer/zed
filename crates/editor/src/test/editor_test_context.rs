@@ -83,6 +83,10 @@ impl EditorTestContext {
         });
         let editor_view = editor.root(cx).unwrap();
 
+        // Draw window to register the editor's action handlers in the fiber tree
+        let mut visual_cx = VisualTestContext::from_window(*editor.deref(), cx);
+        visual_cx.update(|window, cx| window.draw(cx));
+
         cx.run_until_parked();
         Self {
             cx: VisualTestContext::from_window(*editor.deref(), cx),

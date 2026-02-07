@@ -1278,7 +1278,7 @@ impl RulesLibrary {
             )
     }
 
-    fn render_active_rule(&mut self, cx: &mut Context<RulesLibrary>) -> gpui::Stateful<Div> {
+    fn render_active_rule(&mut self, cx: &mut Context<RulesLibrary>) -> Div {
         div()
             .id("rule-editor")
             .h_full()

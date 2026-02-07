@@ -685,6 +685,7 @@ impl Focusable for ImageView {
 }
 
 impl Render for ImageView {
+<<<<<<< HEAD
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .track_focus(&self.focus_handle(cx))
@@ -715,6 +716,83 @@ impl Render for ImageView {
                     .on_mouse_move(cx.listener(Self::handle_mouse_move))
                     .child(ImageContentElement::new(cx.entity())),
             )
+=======
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let image = self.image_item.read(cx).image.clone();
+        let checkered_background =
+            |bounds: Bounds<Pixels>, _: &mut (), window: &mut Window, _cx: &mut App| {
+                let square_size: f32 = 32.0;
+
+                let start_y = bounds.origin.y.into();
+                let height: f32 = bounds.size.height.into();
+                let start_x = bounds.origin.x.into();
+                let width: f32 = bounds.size.width.into();
+
+                let mut y = start_y;
+                let mut x = start_x;
+                let mut color_swapper = true;
+                // draw checkerboard pattern
+                while y < start_y + height {
+                    // Keeping track of the grid in order to be resilient to resizing
+                    let start_swap = color_swapper;
+                    while x < start_x + width {
+                        // Clamp square dimensions to not exceed bounds
+                        let square_width = square_size.min(start_x + width - x);
+                        let square_height = square_size.min(start_y + height - y);
+
+                        let rect = Bounds::new(
+                            point(px(x), px(y)),
+                            size(px(square_width), px(square_height)),
+                        );
+
+                        let color = if color_swapper {
+                            opaque_grey(0.6, 0.4)
+                        } else {
+                            opaque_grey(0.7, 0.4)
+                        };
+
+                        window.paint_quad(fill(rect, color));
+                        color_swapper = !color_swapper;
+                        x += square_size;
+                    }
+                    x = start_x;
+                    color_swapper = !start_swap;
+                    y += square_size;
+                }
+            };
+
+        div().track_focus(&self.focus_handle(cx)).size_full().child(
+            div()
+                .flex()
+                .justify_center()
+                .items_center()
+                .w_full()
+                // TODO: In browser based Tailwind & Flex this would be h-screen and we'd use w-full
+                .h_full()
+                .child(
+                    div()
+                        .relative()
+                        .max_w_full()
+                        .max_h_full()
+                        .child(
+                            canvas(|_, _, _| (), checkered_background)
+                                .border_2()
+                                .border_color(cx.theme().styles.colors.border)
+                                .size_full()
+                                .absolute()
+                                .top_0()
+                                .left_0(),
+                        )
+                        .child(
+                            img(image)
+                                .object_fit(ObjectFit::ScaleDown)
+                                .max_w_full()
+                                .max_h_full()
+                                .id("img"),
+                        ),
+                ),
+        )
+>>>>>>> 02796ac994e25dc0f0f16564d1f40a15cb21ed33
     }
 }
 
