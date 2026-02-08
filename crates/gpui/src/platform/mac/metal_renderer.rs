@@ -628,6 +628,8 @@ impl MetalRenderer {
                     command_encoder,
                 ),
                 PrimitiveBatch::SubpixelSprites { .. } => unreachable!(),
+                PrimitiveBatch::InstancedRects(_batches) => Ok(()),
+                PrimitiveBatch::InstancedLines(_batches) => Ok(()),
             };
             if !ok {
                 command_encoder.end_encoding();

@@ -367,6 +367,11 @@ impl WindowTextSystem {
         self.line_layout_cache.truncate_layouts(index)
     }
 
+    /// Get the glyph for this character
+    pub fn glyph_for_char(&self, font_id: FontId, ch: char) -> Option<GlyphId> {
+        self.platform_text_system.glyph_for_char(font_id, ch)
+    }
+
     /// Shape the given line, at the given font_size, for painting to the screen.
     /// Subsets of the line can be styled independently with the `runs` parameter.
     ///

@@ -267,6 +267,22 @@ impl Interactivity {
             }));
     }
 
+    /// Bind the given callback to the mouse up event, on any button, during the capture phase,
+    /// when the mouse is outside of the bounds of this element.
+    ///
+    /// See [`Context::listener`](crate::Context::listener) to get access to a view's state from this callback.
+    pub fn on_any_mouse_up_out(
+        &mut self,
+        listener: impl Fn(&MouseUpEvent, &mut Window, &mut App) + 'static,
+    ) {
+        self.mouse_up_listeners
+            .push(Box::new(move |event, phase, hitbox, window, cx| {
+                if phase == DispatchPhase::Capture && !hitbox.is_hovered(window) {
+                    (listener)(event, window, cx)
+                }
+            }));
+    }
+
     /// Bind the given callback to the mouse up event, for the given button, during the capture phase,
     /// when the mouse is outside of the bounds of this element.
     /// The imperative API equivalent to [`InteractiveElement::on_mouse_up_out`].
@@ -778,6 +794,18 @@ pub trait InteractiveElement: Sized {
         self
     }
 
+    /// Bind the given callback to the mouse up event for any button, during the capture phase.
+    /// The fluent API equivalent to [`Interactivity::on_any_mouse_up`].
+    ///
+    /// See [`Context::listener`](crate::Context::listener) to get access to a view's state from this callback.
+    fn on_any_mouse_up(
+        mut self,
+        listener: impl Fn(&MouseUpEvent, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.interactivity().on_any_mouse_up(listener);
+        self
+    }
+
     /// Bind the given callback to the mouse down event for any button, during the capture phase.
     /// The fluent API equivalent to [`Interactivity::on_any_mouse_down`].
     ///
@@ -849,6 +877,18 @@ pub trait InteractiveElement: Sized {
         listener: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
     ) -> Self {
         self.interactivity().on_mouse_down_out(listener);
+        self
+    }
+
+    /// Bind the given callback to the mouse up event, on any button, during the capture phase,
+    /// when the mouse is outside of the bounds of this element.
+    ///
+    /// See [`Context::listener`](crate::Context::listener) to get access to a view's state from this callback.
+    fn on_any_mouse_up_out(
+        mut self,
+        listener: impl Fn(&MouseUpEvent, &mut Window, &mut App) + 'static,
+    ) -> Self {
+        self.interactivity().on_any_mouse_up_out(listener);
         self
     }
 
