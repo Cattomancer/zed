@@ -496,9 +496,7 @@ impl<'a> Iterator for BatchIterator<'a> {
                     end += 1;
                 }
                 self.instanced_rects_start = end;
-                Some(PrimitiveBatch::InstancedRects(
-                    &self.instanced_rects[start..end],
-                ))
+                Some(PrimitiveBatch::InstancedRects(start..end))
             }
             PrimitiveKind::InstancedLines => {
                 let start = self.instanced_lines_start;
@@ -512,9 +510,7 @@ impl<'a> Iterator for BatchIterator<'a> {
                     end += 1;
                 }
                 self.instanced_lines_start = end;
-                Some(PrimitiveBatch::InstancedLines(
-                    &self.instanced_lines[start..end],
-                ))
+                Some(PrimitiveBatch::InstancedLines(start..end))
             }
         }
     }
