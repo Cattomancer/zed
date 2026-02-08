@@ -679,7 +679,6 @@ impl LanguageModel for BedrockModel {
         };
 
         let deny_tool_calls = request.tool_choice == Some(LanguageModelToolChoice::None);
-        let bypass_rate_limit = request.bypass_rate_limit;
 
         let request = match into_bedrock(
             request,
@@ -694,19 +693,16 @@ impl LanguageModel for BedrockModel {
         };
 
         let request = self.stream_completion(request, cx);
-        let future = self.request_limiter.stream_with_bypass(
-            async move {
-                let response = request.await.map_err(|err| anyhow!(err))?;
-                let events = map_to_language_model_completion_events(response);
+        let future = self.request_limiter.stream(async move {
+            let response = request.await.map_err(|err| anyhow!(err))?;
+            let events = map_to_language_model_completion_events(response);
 
-                if deny_tool_calls {
-                    Ok(deny_tool_use_events(events).boxed())
-                } else {
-                    Ok(events.boxed())
-                }
-            },
-            bypass_rate_limit,
-        );
+            if deny_tool_calls {
+                Ok(deny_tool_use_events(events).boxed())
+            } else {
+                Ok(events.boxed())
+            }
+        });
 
         async move { Ok(future.await?.boxed()) }.boxed()
     }
@@ -772,6 +768,12 @@ pub fn into_bedrock(
                             if model.contains(Model::DeepSeekR1.request_id()) {
                                 // DeepSeekR1 doesn't support thinking blocks
                                 // And the AWS API demands that you strip them
+                                return None;
+                            }
+                            if signature.is_none() {
+                                // Thinking blocks without a signature are invalid
+                                // (e.g. from cancellation mid-think) and must be
+                                // stripped to avoid API errors.
                                 return None;
                             }
                             let thinking = BedrockThinkingTextBlock::builder()
@@ -854,6 +856,10 @@ pub fn into_bedrock(
                     Role::Assistant => bedrock::BedrockRole::Assistant,
                     Role::System => unreachable!("System role should never occur here"),
                 };
+                if bedrock_message_content.is_empty() {
+                    continue;
+                }
+
                 if let Some(last_message) = new_messages.last_mut()
                     && last_message.role == bedrock_role
                 {
@@ -1408,7 +1414,7 @@ impl Render for ConfigurationView {
                             .child(Label::new("Select the models you would like access to:"))
                             .child(ButtonLink::new(
                                 "Bedrock Model Catalog",
-                                "https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/modelaccess",
+                                "https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/model-catalog",
                             )),
                     ),
             )
