@@ -1671,12 +1671,12 @@ pub struct Interactivity {
     pub(crate) debug_selector: Option<String>,
 }
 
-pub(crate) struct InteractivityPrepaint {
+pub struct InteractivityPrepaint {
     pub(crate) style: Style,
     pub(crate) scroll_offset: Point<Pixels>,
 }
 
-pub(crate) struct InteractivityPaint {
+pub struct InteractivityPaint {
     pub(crate) style: Style,
     pub(crate) tab_group: Option<isize>,
 }
@@ -2130,7 +2130,7 @@ impl Interactivity {
         );
     }
 
-    pub(crate) fn prepare_prepaint(
+    pub fn prepare_prepaint(
         &mut self,
         global_id: GlobalElementId,
         inspector_id: Option<&InspectorElementId>,
@@ -2225,7 +2225,7 @@ impl Interactivity {
         )
     }
 
-    pub(crate) fn prepare_paint(
+    pub fn prepare_paint(
         &mut self,
         global_id: GlobalElementId,
         bounds: Bounds<Pixels>,
