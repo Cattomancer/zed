@@ -2124,6 +2124,12 @@ impl App {
         self.active_drag.as_ref().and_then(|drag| drag.cursor_style)
     }
 
+    /// Sets the active drag manually.
+    pub fn set_active_drag(&mut self, value: AnyDrag)
+    {
+        self.active_drag = Some(value);
+    }
+    
     /// Stops active drag and clears any related effects.
     pub fn stop_active_drag(&mut self, window: &mut Window) -> bool {
         if self.active_drag.is_some() {
