@@ -637,6 +637,10 @@ impl Interactivity {
     pub fn occlude_mouse(&mut self) {
         self.hitbox_behavior = HitboxBehavior::BlockMouse;
     }
+    
+    pub fn unocclude(&mut self) {
+        self.hitbox_behavior = HitboxBehavior::Normal;
+    }
 
     /// Set the bounds of this element as a window control area for the platform window.
     /// The imperative API equivalent to [`InteractiveElement::window_control_area`]
@@ -1106,6 +1110,11 @@ pub trait InteractiveElement: Sized {
     /// The fluent API equivalent to [`Interactivity::occlude_mouse`].
     fn occlude(mut self) -> Self {
         self.interactivity().occlude_mouse();
+        self
+    }
+    
+    fn unocclude(mut self) -> Self {
+        self.interactivity().unocclude();
         self
     }
 
