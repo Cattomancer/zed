@@ -2560,7 +2560,6 @@ impl From<Percentage> for Radians {
     Default,
     Add,
     AddAssign,
-    Sub,
     SubAssign,
     Neg,
     Div,
@@ -2675,11 +2674,27 @@ impl TryFrom<&'_ str> for Pixels {
     }
 }
 
+impl std::ops::Sub<Pixels> for Pixels {
+    type Output = Self;
+
+    fn sub(self, other: Pixels) -> Self::Output {
+        Self(self.0 - other.0)
+    }
+}
+
 impl std::ops::Sub<f32> for Pixels {
     type Output = Self;
 
     fn sub(self, other: f32) -> Self::Output {
         Self(self.0 - other)
+    }
+}
+
+impl Mul<Pixels> for Pixels {
+    type Output = Self;
+
+    fn mul(self, rhs: Pixels) -> Self {
+        Self(self.0 * rhs.0)
     }
 }
 
