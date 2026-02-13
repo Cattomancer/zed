@@ -2558,7 +2558,6 @@ impl From<Percentage> for Radians {
     Clone,
     Copy,
     Default,
-    AddAssign,
     SubAssign,
     Neg,
     Div,
@@ -2704,6 +2703,19 @@ impl std::ops::Add<Pixels> for Pixels {
         Self(self.0 + other.0)
     }
 }
+
+impl std::ops::AddAssign for Pixels {
+    fn add_assign(&mut self, rhs: Pixels) {
+        self.0 += rhs.0;
+    }
+}
+
+impl std::ops::AddAssign<f32> for Pixels {
+    fn add_assign(&mut self, rhs: f32) {
+        self.0 += rhs;
+    }
+}
+
 impl Mul<Pixels> for Pixels {
     type Output = Self;
 
