@@ -2675,6 +2675,14 @@ impl TryFrom<&'_ str> for Pixels {
     }
 }
 
+impl std::ops::Sub<f32> for Pixels {
+    type Output = Self;
+
+    fn sub(self, other: f32) -> Self::Output {
+        Self(self.0 - other)
+    }
+}
+
 impl Pixels {
     /// Represents zero pixels.
     pub const ZERO: Pixels = Pixels(0.0);
