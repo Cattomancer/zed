@@ -5,20 +5,20 @@ use crate::{
     AsyncWindowContext, AvailableSpace, Background, BorderStyle, Bounds, BoxShadow, Capslock,
     Context, Corners, CursorStyle, Decorations, DevicePixels, DispatchActionListener,
     DispatchNodeId, DispatchTree, DisplayId, Edges, Effect, Entity, EntityId, EventEmitter,
-    FileDropEvent, FontId, Global, GlobalElementId, GlyphId, GpuSpecs, Hsla, InputHandler, IsZero,
-    KeyBinding, KeyContext, KeyDownEvent, KeyEvent, Keystroke, KeystrokeEvent, LayoutId,
-    LineLayoutIndex, Modifiers, ModifiersChangedEvent, MonochromeSprite, MouseButton, MouseEvent,
-    MouseMoveEvent, MouseUpEvent, Path, Pixels, PlatformAtlas, PlatformDisplay, PlatformInput,
-    PlatformInputHandler, PlatformWindow, Point, PolychromeSprite, Priority, PromptButton,
-    PromptLevel, Quad, Render, RenderGlyphParams, RenderImage, RenderImageParams, RenderSvgParams,
-    Replay, ResizeEdge, SMOOTH_SVG_SCALE_FACTOR, SUBPIXEL_VARIANTS_X, SUBPIXEL_VARIANTS_Y,
-    ScaledPixels, Scene, Shadow, SharedString, Size, StrikethroughStyle, Style, SubpixelSprite,
-    SubscriberSet, Subscription, SystemWindowTab, SystemWindowTabController, TabStopMap,
-    TaffyLayoutEngine, Task, TextRenderingMode, TextStyle, TextStyleRefinement, ThermalState,
-    TransformationMatrix, Underline, UnderlineStyle, WindowAppearance, WindowBackgroundAppearance,
-    WindowBounds, WindowControls, WindowDecorations, WindowOptions, WindowParams, WindowTextSystem,
-    point, prelude::*, px, rems, size, transparent_black, InstancedRects, InstancedRect,
-    LineSegmentInstance, InstancedLines,
+    FileDropEvent, FontId, Global, GlobalElementId, GlyphId, GpuSpecs, Hsla, InputHandler,
+    InstancedLines, InstancedRect, InstancedRects, IsZero, KeyBinding, KeyContext, KeyDownEvent,
+    KeyEvent, Keystroke, KeystrokeEvent, LayoutId, LineLayoutIndex, LineSegmentInstance, Modifiers,
+    ModifiersChangedEvent, MonochromeSprite, MouseButton, MouseEvent, MouseMoveEvent, MouseUpEvent,
+    Path, Pixels, PlatformAtlas, PlatformDisplay, PlatformInput, PlatformInputHandler,
+    PlatformWindow, Point, PolychromeSprite, Priority, PromptButton, PromptLevel, Quad, Render,
+    RenderGlyphParams, RenderImage, RenderImageParams, RenderSvgParams, Replay, ResizeEdge,
+    SMOOTH_SVG_SCALE_FACTOR, SUBPIXEL_VARIANTS_X, SUBPIXEL_VARIANTS_Y, ScaledPixels, Scene, Shadow,
+    SharedString, Size, StrikethroughStyle, Style, SubpixelSprite, SubscriberSet, Subscription,
+    SystemWindowTab, SystemWindowTabController, TabStopMap, TaffyLayoutEngine, Task,
+    TextRenderingMode, TextStyle, TextStyleRefinement, ThermalState, TransformationMatrix,
+    Underline, UnderlineStyle, WindowAppearance, WindowBackgroundAppearance, WindowBounds,
+    WindowControls, WindowDecorations, WindowOptions, WindowParams, WindowTextSystem, point,
+    prelude::*, px, rems, size, transparent_black,
 };
 use anyhow::{Context as _, Result, anyhow};
 use collections::{FxHashMap, FxHashSet};
@@ -1614,6 +1614,11 @@ impl Window {
         self.refresh();
     }
 
+    /// Remove focus from all elements within this context's window without refreshing.
+    pub fn remove_focus(&mut self) {
+        self.focus = None;
+    }
+
     /// Blur the window and don't allow anything in it to be focused again.
     pub fn disable_focus(&mut self) {
         self.blur();
@@ -3182,7 +3187,10 @@ impl Window {
             min_y = min_y.min(b.origin.y.0);
             max_x = max_x.max(b.origin.x.0 + b.size.width.0);
             max_y = max_y.max(b.origin.y.0 + b.size.height.0);
-            scaled_rects.push(InstancedRect { bounds: b, color: r.color });
+            scaled_rects.push(InstancedRect {
+                bounds: b,
+                color: r.color,
+            });
         }
         let union_bounds = Bounds {
             origin: point(ScaledPixels(min_x), ScaledPixels(min_y)),
@@ -3200,7 +3208,6 @@ impl Window {
         };
         self.next_frame.scene.insert_primitive(batch);
     }
-
 
     /// Paint many line segments as a single batched primitive into the scene for the next frame.
     /// Line segments are rendered as extruded rectangles (quads) with the given width and color.
@@ -3227,7 +3234,12 @@ impl Window {
             min_y = min_y.min(sp0.y.0.min(sp1.y.0) - half);
             max_x = max_x.max(sp0.x.0.max(sp1.x.0) + half);
             max_y = max_y.max(sp0.y.0.max(sp1.y.0) + half);
-            scaled.push(LineSegmentInstance { p0: sp0.map(|x| x), p1: sp1.map(|x| x), width: seg.width * scale, color: seg.color });
+            scaled.push(LineSegmentInstance {
+                p0: sp0.map(|x| x),
+                p1: sp1.map(|x| x),
+                width: seg.width * scale,
+                color: seg.color,
+            });
         }
         let union_bounds = Bounds {
             origin: point(ScaledPixels(min_x), ScaledPixels(min_y)),
