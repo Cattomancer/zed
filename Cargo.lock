@@ -7732,7 +7732,7 @@ dependencies = [
 
 [[package]]
 name = "gpui_macros"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "gpui",
  "heck 0.5.0",
@@ -18523,7 +18523,7 @@ dependencies = [
  "component",
  "documented",
  "gpui",
- "gpui-macros",
+ "gpui_macros",
  "icons",
  "itertools 0.14.0",
  "menu",

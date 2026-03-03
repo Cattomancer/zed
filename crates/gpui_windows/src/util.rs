@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use ::util::ResultExt;
+pub use ::util::ResultExt;
 use anyhow::Context;
 use windows::{
     UI::{

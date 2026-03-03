@@ -3,10 +3,9 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use self::util::ResultExt;
 use anyhow::{Context, Result};
+use crate::util::ResultExt;
 use windows::{
-    core::{s, Interface},
     Win32::{
         Foundation::HWND,
         Graphics::{
@@ -17,6 +16,7 @@ use windows::{
             Dxgi::{Common::*, *},
         },
     },
+    core::{Interface, s},
 };
 
 use crate::directx_renderer::shader_resources::{RawShaderBytes, ShaderModule, ShaderTarget};
@@ -318,7 +318,7 @@ impl DirectXRenderer {
         self.upload_scene_buffers(scene)?;
 
         self.pipelines.begin_frame();
-      
+
         for batch in scene.batches() {
             match batch {
                 PrimitiveBatch::Shadows(range) => self.draw_shadows(range.start, range.len()),
@@ -2235,11 +2235,11 @@ pub(crate) mod shader_resources {
 
     #[cfg(debug_assertions)]
     use windows::{
-        core::{HSTRING, PCSTR},
         Win32::Graphics::Direct3D::{
-            Fxc::{D3DCompileFromFile, D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION},
+            Fxc::{D3DCOMPILE_DEBUG, D3DCOMPILE_SKIP_OPTIMIZATION, D3DCompileFromFile},
             ID3DBlob,
         },
+        core::{HSTRING, PCSTR},
     };
 
     #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -2441,7 +2441,7 @@ mod nvidia {
     };
 
     use anyhow::Result;
-    use windows::{core::s, Win32::System::LibraryLoader::GetProcAddress};
+    use windows::{Win32::System::LibraryLoader::GetProcAddress, core::s};
 
     use crate::with_dll_library;
 
@@ -2508,7 +2508,7 @@ mod amd {
     use std::os::raw::{c_char, c_int, c_void};
 
     use anyhow::Result;
-    use windows::{core::s, Win32::System::LibraryLoader::GetProcAddress};
+    use windows::{Win32::System::LibraryLoader::GetProcAddress, core::s};
 
     use crate::with_dll_library;
 
@@ -2601,8 +2601,8 @@ mod amd {
 
 mod dxgi {
     use windows::{
-        core::Interface,
         Win32::Graphics::Dxgi::{IDXGIAdapter1, IDXGIDevice},
+        core::Interface,
     };
 
     pub(super) fn get_driver_version(adapter: &IDXGIAdapter1) -> anyhow::Result<String> {
