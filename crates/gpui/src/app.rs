@@ -1669,7 +1669,7 @@ impl App {
     /// Remove the global of the given type from the app context. Does not notify global observers.
     pub fn remove_global<G: Global>(&mut self) -> G {
         let global_type = TypeId::of::<G>();
-        self.push_effect(Effect::NotifyGlobalObservers { global_type });
+        //self.push_effect(Effect::NotifyGlobalObservers { global_type });
         *self
             .globals_by_type
             .remove(&global_type)
@@ -2125,11 +2125,10 @@ impl App {
     }
 
     /// Sets the active drag manually.
-    pub fn set_active_drag(&mut self, value: AnyDrag)
-    {
+    pub fn set_active_drag(&mut self, value: AnyDrag) {
         self.active_drag = Some(value);
     }
-    
+
     /// Stops active drag and clears any related effects.
     pub fn stop_active_drag(&mut self, window: &mut Window) -> bool {
         if self.active_drag.is_some() {
