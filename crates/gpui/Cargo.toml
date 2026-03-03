@@ -25,7 +25,7 @@ test-support = [
     "wayland",
     "x11",
 ]
-inspector = ["gpui-macros/inspector"]
+inspector = ["gpui_macros/inspector"]
 leak-detection = ["backtrace"]
 wayland = [
     "bitflags",
