@@ -141,6 +141,11 @@ impl TextSystem {
             .next()
     }
 
+    /// Get the glyph for this character
+    pub fn glyph_for_char(&self, font_id: FontId, ch: char) -> Option<GlyphId> {
+        self.platform_text_system.glyph_for_char(font_id, ch)
+    }
+
     /// Resolves the specified font, falling back to the default font stack if
     /// the font fails to load.
     ///
