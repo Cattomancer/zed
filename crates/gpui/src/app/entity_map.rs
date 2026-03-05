@@ -939,7 +939,7 @@ pub(crate) struct LeakDetector {
 /// handles remain between the snapshot and the current state.
 #[cfg(any(test, feature = "leak-detection"))]
 pub struct LeakDetectorSnapshot {
-    entity_ids: collections::HashSet<EntityId>,
+    pub entity_ids: collections::HashSet<EntityId>,
 }
 
 #[cfg(any(test, feature = "leak-detection"))]
