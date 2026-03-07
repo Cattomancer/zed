@@ -953,6 +953,22 @@ impl App {
         )
     }
 
+    /// Emit an event of the specified type, which can be handled by other entities that have subscribed via `subscribe` methods on their respective contexts.
+    pub fn emit_for<Evt>(&mut self, emitter: EntityId, event: Evt)
+    where
+        Evt: 'static,
+    {
+        let event = self
+            .event_arena
+            .alloc(|| event)
+            .map(|it| it as &mut dyn Any);
+        self.pending_effects.push_back(Effect::Emit {
+            emitter,
+            event_type: TypeId::of::<Evt>(),
+            event,
+        });
+    }
+
     /// Arrange for the given callback to be invoked whenever the given entity emits an event of a given type.
     /// The callback is provided a handle to the emitting entity and a reference to the emitted event.
     pub fn subscribe<T, Event>(
