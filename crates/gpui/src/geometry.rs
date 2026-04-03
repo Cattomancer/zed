@@ -2536,9 +2536,6 @@ impl From<Percentage> for Radians {
     Clone,
     Copy,
     Default,
-    Add,
-    AddAssign,
-    Sub,
     SubAssign,
     Neg,
     Div,
@@ -2650,6 +2647,58 @@ impl TryFrom<&'_ str> for Pixels {
             .context("expected 'px' suffix")
             .and_then(|number| Ok(number.parse()?))
             .map(Self)
+    }
+}
+
+impl std::ops::Sub<Pixels> for Pixels {
+    type Output = Self;
+
+    fn sub(self, other: Pixels) -> Self::Output {
+        Self(self.0 - other.0)
+    }
+}
+
+impl std::ops::Sub<f32> for Pixels {
+    type Output = Self;
+
+    fn sub(self, other: f32) -> Self::Output {
+        Self(self.0 - other)
+    }
+}
+
+impl std::ops::Add<f32> for Pixels {
+    type Output = Self;
+
+    fn add(self, other: f32) -> Self::Output {
+        Self(self.0 + other)
+    }
+}
+
+impl std::ops::Add<Pixels> for Pixels {
+    type Output = Self;
+
+    fn add(self, other: Pixels) -> Self::Output {
+        Self(self.0 + other.0)
+    }
+}
+
+impl std::ops::AddAssign for Pixels {
+    fn add_assign(&mut self, rhs: Pixels) {
+        self.0 += rhs.0;
+    }
+}
+
+impl std::ops::AddAssign<f32> for Pixels {
+    fn add_assign(&mut self, rhs: f32) {
+        self.0 += rhs;
+    }
+}
+
+impl Mul<Pixels> for Pixels {
+    type Output = Self;
+
+    fn mul(self, rhs: Pixels) -> Self {
+        Self(self.0 * rhs.0)
     }
 }
 

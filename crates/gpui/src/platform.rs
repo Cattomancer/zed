@@ -1479,7 +1479,7 @@ pub struct WindowParams {
 }
 
 /// Represents the status of how a window should be opened.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WindowBounds {
     /// Indicates that the window should open in a windowed state with the given bounds.
     Windowed(Bounds<Pixels>),
