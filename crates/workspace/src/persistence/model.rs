@@ -10,10 +10,10 @@ use db::sqlez::{
     bindable::{Bind, Column, StaticColumnCount},
     statement::Statement,
 };
-use gpui::{AsyncWindowContext, Entity, WeakEntity};
+use gpui::{AsyncWindowContext, Entity, WeakEntity, WindowId};
 
 use language::{Toolchain, ToolchainScope};
-use project::{Project, debugger::breakpoint_store::SourceBreakpoint};
+use project::{Project, ProjectGroupKey, debugger::breakpoint_store::SourceBreakpoint};
 use remote::RemoteConnectionOptions;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -21,7 +21,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use util::ResultExt;
+use util::{ResultExt, path_list::SerializedPathList};
 use uuid::Uuid;
 
 #[derive(
@@ -36,7 +36,7 @@ pub(crate) enum RemoteConnectionKind {
     Docker,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub enum SerializedWorkspaceLocation {
     Local,
     Remote(RemoteConnectionOptions),
@@ -47,6 +47,53 @@ impl SerializedWorkspaceLocation {
     pub fn sorted_paths(&self) -> Arc<Vec<PathBuf>> {
         unimplemented!()
     }
+}
+
+/// A workspace entry from a previous session, containing all the info needed
+/// to restore it including which window it belonged to (for MultiWorkspace grouping).
+#[derive(Debug, PartialEq, Clone)]
+pub struct SessionWorkspace {
+    pub workspace_id: WorkspaceId,
+    pub location: SerializedWorkspaceLocation,
+    pub paths: PathList,
+    pub window_id: Option<WindowId>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct SerializedProjectGroupKey {
+    pub path_list: SerializedPathList,
+    pub(crate) location: SerializedWorkspaceLocation,
+}
+
+impl From<ProjectGroupKey> for SerializedProjectGroupKey {
+    fn from(value: ProjectGroupKey) -> Self {
+        SerializedProjectGroupKey {
+            path_list: value.path_list().serialize(),
+            location: match value.host() {
+                Some(host) => SerializedWorkspaceLocation::Remote(host),
+                None => SerializedWorkspaceLocation::Local,
+            },
+        }
+    }
+}
+
+/// Per-window state for a MultiWorkspace, persisted to KVP.
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+pub struct MultiWorkspaceState {
+    pub active_workspace_id: Option<WorkspaceId>,
+    pub sidebar_open: bool,
+    pub project_group_keys: Vec<SerializedProjectGroupKey>,
+    #[serde(default)]
+    pub sidebar_state: Option<String>,
+}
+
+/// The serialized state of a single MultiWorkspace window from a previous session:
+/// all workspaces that shared the window, which one was active, and whether the
+/// sidebar was open.
+#[derive(Debug, Clone)]
+pub struct SerializedMultiWorkspace {
+    pub workspaces: Vec<SessionWorkspace>,
+    pub state: MultiWorkspaceState,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -67,9 +114,9 @@ pub(crate) struct SerializedWorkspace {
 
 #[derive(Debug, PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct DockStructure {
-    pub(crate) left: DockData,
-    pub(crate) right: DockData,
-    pub(crate) bottom: DockData,
+    pub left: DockData,
+    pub right: DockData,
+    pub bottom: DockData,
 }
 
 impl RemoteConnectionKind {
@@ -117,9 +164,9 @@ impl Bind for DockStructure {
 
 #[derive(Debug, PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct DockData {
-    pub(crate) visible: bool,
-    pub(crate) active_panel: Option<String>,
-    pub(crate) zoom: bool,
+    pub visible: bool,
+    pub active_panel: Option<String>,
+    pub zoom: bool,
 }
 
 impl Column for DockData {

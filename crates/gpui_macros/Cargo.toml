@@ -1,5 +1,5 @@
 [package]
-name = "gpui-macros"
+name = "gpui_macros"
 version = "0.2.2"
 edition.workspace = true
 publish = true
