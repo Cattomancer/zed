@@ -786,7 +786,7 @@ impl Default for TransformationMatrix {
 #[expect(missing_docs)]
 pub struct MonochromeSprite {
     pub order: DrawOrder,
-    pub pad: u32, // align to 8 bytes
+    pub pad: u32,
     pub bounds: Bounds<ScaledPixels>,
     pub content_mask: ContentMask<ScaledPixels>,
     pub color: Hsla,
@@ -824,7 +824,7 @@ impl From<SubpixelSprite> for Primitive {
 #[expect(missing_docs)]
 pub struct PolychromeSprite {
     pub order: DrawOrder,
-    pub pad: u32, // align to 8 bytes
+    pub pad: u32,
     pub grayscale: bool,
     pub opacity: f32,
     pub bounds: Bounds<ScaledPixels>,
