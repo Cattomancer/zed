@@ -1344,103 +1344,94 @@ fn hue_to_rgb(p: f32, q: f32, t_in: f32) -> f32 {
     return p;
 }
 
-// ==========================================
-// Instanced Rects
-// ==========================================
+// --- instanced rectangles --- //
 
-struct InstancedRectRaw {
-    bounds: Bounds,
-    color: Hsla,
-    clip: vec4<f32>,
+struct InstancedRect {
+    origin_px: vec2<f32>,
+    size_px: vec2<f32>,
+    color_hsla: vec4<f32>,
+    clip_ltrb: vec4<f32>,
 }
-@group(1) @binding(0) var<storage, read> b_instanced_rects: array<InstancedRectRaw>;
+@group(1) @binding(0) var<storage, read> b_instanced_rects: array<InstancedRect>;
 
 struct InstancedRectVarying {
     @builtin(position) position: vec4<f32>,
     @location(0) color: vec4<f32>,
-    @location(1) clip_bounds: vec4<f32>,
-    @location(2) px: vec2<f32>,
+    @location(1) clip_distances: vec4<f32>,
 }
 
 @vertex
 fn vs_instanced_rect(@builtin(vertex_index) vertex_id: u32, @builtin(instance_index) instance_id: u32) -> InstancedRectVarying {
-    let unit_vertex = vec2<f32>(f32(vertex_id & 1u), 0.5 * f32(vertex_id & 2u));
-    let instance = b_instanced_rects[instance_id];
-
-    let px = instance.bounds.origin + unit_vertex * instance.bounds.size;
-
-    let device_position = to_device_position_impl(px);
+    let unit = vec2<f32>(f32(vertex_id & 1u), 0.5 * f32(vertex_id & 2u));
+    let inst = b_instanced_rects[instance_id];
+    let px = inst.origin_px + unit * inst.size_px;
 
     var out = InstancedRectVarying();
-    out.position = device_position;
-    out.color = hsla_to_rgba(instance.color);
-    out.clip_bounds = instance.clip;
-    out.px = px;
-
+    out.position = to_device_position_impl(px);
+    out.color = hsla_to_rgba(Hsla(inst.color_hsla.x, inst.color_hsla.y, inst.color_hsla.z, inst.color_hsla.w));
+    out.clip_distances = vec4<f32>(
+        px.x - inst.clip_ltrb.x,
+        inst.clip_ltrb.z - px.x,
+        px.y - inst.clip_ltrb.y,
+        inst.clip_ltrb.w - px.y,
+    );
     return out;
 }
 
 @fragment
 fn fs_instanced_rect(input: InstancedRectVarying) -> @location(0) vec4<f32> {
-    if (input.px.x < input.clip_bounds.x || input.px.x > input.clip_bounds.z ||
-        input.px.y < input.clip_bounds.y || input.px.y > input.clip_bounds.w) {
-        discard;
+    if (any(input.clip_distances < vec4<f32>(0.0))) {
+        return vec4<f32>(0.0);
     }
-
     return input.color;
 }
 
-// ==========================================
-// Instanced Lines
-// ==========================================
+// --- instanced lines --- //
 
-struct InstancedLineRaw {
-    p0: vec2<f32>,
-    p1: vec2<f32>,
-    width: f32,
-    pad: vec3<f32>, // 12-byte padding so `Hsla` aligns to 16 bytes
-    color: Hsla,
-    clip: vec4<f32>,
+struct InstancedLine {
+    p0_px: vec2<f32>,
+    p1_px: vec2<f32>,
+    thickness_pad: vec2<f32>,
+    color_hsla: vec4<f32>,
+    clip_ltrb: vec4<f32>,
 }
-@group(1) @binding(0) var<storage, read> b_instanced_lines: array<InstancedLineRaw>;
+@group(1) @binding(0) var<storage, read> b_instanced_lines: array<InstancedLine>;
 
 struct InstancedLineVarying {
     @builtin(position) position: vec4<f32>,
     @location(0) color: vec4<f32>,
-    @location(1) clip_bounds: vec4<f32>,
-    @location(2) px: vec2<f32>,
+    @location(1) clip_distances: vec4<f32>,
 }
 
 @vertex
 fn vs_instanced_line(@builtin(vertex_index) vertex_id: u32, @builtin(instance_index) instance_id: u32) -> InstancedLineVarying {
-    let unit_vertex = vec2<f32>(f32(vertex_id & 1u), 0.5 * f32(vertex_id & 2u));
-    let instance = b_instanced_lines[instance_id];
+    let unit = vec2<f32>(f32(vertex_id & 1u), 0.5 * f32(vertex_id & 2u));
+    let inst = b_instanced_lines[instance_id];
 
-    let dir = instance.p1 - instance.p0;
+    let dir = inst.p1_px - inst.p0_px;
     let len = length(dir);
-
     let tangent = select(vec2<f32>(1.0, 0.0), dir / len, len > 0.0);
     let normal = vec2<f32>(-tangent.y, tangent.x);
-
-    let along = instance.p0 + dir * unit_vertex.x;
-    let signed_offset = (unit_vertex.y - 0.5) * instance.width;
+    let along = inst.p0_px + dir * unit.x;
+    let signed_offset = (unit.y - 0.5) * inst.thickness_pad.x;
     let px = along + normal * signed_offset;
 
     var out = InstancedLineVarying();
     out.position = to_device_position_impl(px);
-    out.color = hsla_to_rgba(instance.color);
-    out.clip_bounds = instance.clip;
-    out.px = px;
-
+    out.color = hsla_to_rgba(Hsla(inst.color_hsla.x, inst.color_hsla.y, inst.color_hsla.z, inst.color_hsla.w));
+    out.clip_distances = vec4<f32>(
+        px.x - inst.clip_ltrb.x,
+        inst.clip_ltrb.z - px.x,
+        px.y - inst.clip_ltrb.y,
+        inst.clip_ltrb.w - px.y,
+    );
     return out;
 }
 
 @fragment
 fn fs_instanced_line(input: InstancedLineVarying) -> @location(0) vec4<f32> {
-    if (input.px.x < input.clip_bounds.x || input.px.x > input.clip_bounds.z ||
-        input.px.y < input.clip_bounds.y || input.px.y > input.clip_bounds.w) {
-        discard;
+    if (any(input.clip_distances < vec4<f32>(0.0))) {
+        return vec4<f32>(0.0);
     }
-
     return input.color;
 }
