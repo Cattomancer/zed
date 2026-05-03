@@ -340,7 +340,6 @@ impl<'a> Iterator for BatchIterator<'a> {
                 self.instanced_rects_iter.peek().map(|b| b.order),
                 PrimitiveKind::InstancedRects,
             ),
-
             (
                 self.instanced_lines_iter.peek().map(|b| b.order),
                 PrimitiveKind::InstancedLines,
@@ -579,10 +578,6 @@ impl From<Quad> for Primitive {
 pub struct InstancedRect {
     pub bounds: Bounds<ScaledPixels>,
     // Color stored as HSLA for consistency with gpui primitives.
-    // The Metal shader converts HSLA→RGBA per-vertex. This is correct and
-    // keeps the instance format idiomatic. If profiling shows vertex pressure
-    // at very large instance counts, we can preconvert to RGBA (or pack RGBA8)
-    // as a future optimization.
     pub color: Hsla,
 }
 
@@ -600,8 +595,6 @@ impl From<InstancedRects> for Primitive {
         Primitive::InstancedRects(batch)
     }
 }
-
-
 
 #[derive(Debug, Clone)]
 #[repr(C)]
