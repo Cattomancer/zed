@@ -36,6 +36,8 @@ pub struct Scene {
     pub subpixel_sprites: Vec<SubpixelSprite>,
     pub polychrome_sprites: Vec<PolychromeSprite>,
     pub surfaces: Vec<PaintSurface>,
+    pub instanced_rects: Vec<InstancedRects>,
+    pub instanced_lines: Vec<InstancedLines>,
 }
 
 #[expect(missing_docs)]
@@ -52,6 +54,8 @@ impl Scene {
         self.subpixel_sprites.clear();
         self.polychrome_sprites.clear();
         self.surfaces.clear();
+        self.instanced_rects.clear();
+        self.instanced_lines.clear();
     }
 
     pub fn len(&self) -> usize {
@@ -119,6 +123,14 @@ impl Scene {
                 surface.order = order;
                 self.surfaces.push(surface.clone());
             }
+            Primitive::InstancedRects(batch) => {
+                batch.order = order;
+                self.instanced_rects.push(batch.clone());
+            }
+            Primitive::InstancedLines(batch) => {
+                batch.order = order;
+                self.instanced_lines.push(batch.clone());
+            }
         }
         self.paint_operations
             .push(PaintOperation::Primitive(primitive));
@@ -146,6 +158,8 @@ impl Scene {
         self.polychrome_sprites
             .sort_by_key(|sprite| (sprite.order, sprite.tile.tile_id));
         self.surfaces.sort_by_key(|surface| surface.order);
+        self.instanced_rects.sort_by_key(|b| b.order);
+        self.instanced_lines.sort_by_key(|b| b.order);
     }
 
     #[cfg_attr(
@@ -173,6 +187,12 @@ impl Scene {
             polychrome_sprites_iter: self.polychrome_sprites.iter().peekable(),
             surfaces_start: 0,
             surfaces_iter: self.surfaces.iter().peekable(),
+            instanced_rects: &self.instanced_rects,
+            instanced_rects_start: 0,
+            instanced_rects_iter: self.instanced_rects.iter().peekable(),
+            instanced_lines: &self.instanced_lines,
+            instanced_lines_start: 0,
+            instanced_lines_iter: self.instanced_lines.iter().peekable(),
         }
     }
 }
@@ -195,6 +215,8 @@ pub(crate) enum PrimitiveKind {
     SubpixelSprite,
     PolychromeSprite,
     Surface,
+    InstancedRects,
+    InstancedLines,
 }
 
 pub(crate) enum PaintOperation {
@@ -214,6 +236,8 @@ pub enum Primitive {
     SubpixelSprite(SubpixelSprite),
     PolychromeSprite(PolychromeSprite),
     Surface(PaintSurface),
+    InstancedRects(InstancedRects),
+    InstancedLines(InstancedLines),
 }
 
 #[expect(missing_docs)]
@@ -228,6 +252,8 @@ impl Primitive {
             Primitive::SubpixelSprite(sprite) => &sprite.bounds,
             Primitive::PolychromeSprite(sprite) => &sprite.bounds,
             Primitive::Surface(surface) => &surface.bounds,
+            Primitive::InstancedRects(batch) => &batch.bounds,
+            Primitive::InstancedLines(batch) => &batch.bounds,
         }
     }
 
@@ -241,6 +267,8 @@ impl Primitive {
             Primitive::SubpixelSprite(sprite) => &sprite.content_mask,
             Primitive::PolychromeSprite(sprite) => &sprite.content_mask,
             Primitive::Surface(surface) => &surface.content_mask,
+            Primitive::InstancedRects(batch) => &batch.content_mask,
+            Primitive::InstancedLines(batch) => &batch.content_mask,
         }
     }
 }
@@ -269,6 +297,12 @@ struct BatchIterator<'a> {
     polychrome_sprites_iter: Peekable<slice::Iter<'a, PolychromeSprite>>,
     surfaces_start: usize,
     surfaces_iter: Peekable<slice::Iter<'a, PaintSurface>>,
+    instanced_rects: &'a [InstancedRects],
+    instanced_rects_start: usize,
+    instanced_rects_iter: Peekable<slice::Iter<'a, InstancedRects>>,
+    instanced_lines: &'a [InstancedLines],
+    instanced_lines_start: usize,
+    instanced_lines_iter: Peekable<slice::Iter<'a, InstancedLines>>,
 }
 
 impl<'a> Iterator for BatchIterator<'a> {
@@ -301,6 +335,14 @@ impl<'a> Iterator for BatchIterator<'a> {
             (
                 self.surfaces_iter.peek().map(|s| s.order),
                 PrimitiveKind::Surface,
+            ),
+            (
+                self.instanced_rects_iter.peek().map(|b| b.order),
+                PrimitiveKind::InstancedRects,
+            ),
+            (
+                self.instanced_lines_iter.peek().map(|b| b.order),
+                PrimitiveKind::InstancedLines,
             ),
         ];
         orders_and_kinds.sort_by_key(|(order, kind)| (order.unwrap_or(u32::MAX), *kind));
@@ -447,6 +489,34 @@ impl<'a> Iterator for BatchIterator<'a> {
                 self.surfaces_start = surfaces_end;
                 Some(PrimitiveBatch::Surfaces(surfaces_start..surfaces_end))
             }
+            PrimitiveKind::InstancedRects => {
+                let start = self.instanced_rects_start;
+                let mut end = start + 1;
+                self.instanced_rects_iter.next();
+                while self
+                    .instanced_rects_iter
+                    .next_if(|b| (b.order, batch_kind) < max_order_and_kind)
+                    .is_some()
+                {
+                    end += 1;
+                }
+                self.instanced_rects_start = end;
+                Some(PrimitiveBatch::InstancedRects(start..end))
+            }
+            PrimitiveKind::InstancedLines => {
+                let start = self.instanced_lines_start;
+                let mut end = start + 1;
+                self.instanced_lines_iter.next();
+                while self
+                    .instanced_lines_iter
+                    .next_if(|b| (b.order, batch_kind) < max_order_and_kind)
+                    .is_some()
+                {
+                    end += 1;
+                }
+                self.instanced_lines_start = end;
+                Some(PrimitiveBatch::InstancedLines(start..end))
+            }
         }
     }
 }
@@ -479,6 +549,8 @@ pub enum PrimitiveBatch {
         range: Range<usize>,
     },
     Surfaces(Range<usize>),
+    InstancedRects(Range<usize>),
+    InstancedLines(Range<usize>),
 }
 
 #[derive(Default, Debug, Copy, Clone)]
@@ -502,6 +574,56 @@ impl From<Quad> for Primitive {
 }
 
 #[derive(Debug, Copy, Clone)]
+#[repr(C)]
+pub struct InstancedRect {
+    pub bounds: Bounds<ScaledPixels>,
+    // Color stored as HSLA for consistency with gpui primitives.
+    pub color: Hsla,
+}
+
+#[derive(Debug, Clone)]
+#[repr(C)]
+pub struct InstancedRects {
+    pub order: DrawOrder,
+    pub bounds: Bounds<ScaledPixels>,
+    pub content_mask: ContentMask<ScaledPixels>,
+    pub rects: Vec<InstancedRect>,
+}
+
+impl From<InstancedRects> for Primitive {
+    fn from(batch: InstancedRects) -> Self {
+        Primitive::InstancedRects(batch)
+    }
+}
+
+#[derive(Debug, Clone)]
+#[repr(C)]
+pub struct LineSegmentInstance {
+    pub p0: Point<ScaledPixels>,
+    pub p1: Point<ScaledPixels>,
+    pub width: f32,
+    // See note on InstancedRect::color. HSLA keeps parity with the rest of gpui;
+    // shaders perform HSLA→RGBA conversion per-vertex. Packing to RGBA8 is a
+    // possible bandwidth optimization if needed later.
+    pub color: Hsla,
+}
+
+#[derive(Debug, Clone)]
+#[repr(C)]
+pub struct InstancedLines {
+    pub order: DrawOrder,
+    pub bounds: Bounds<ScaledPixels>,
+    pub content_mask: ContentMask<ScaledPixels>,
+    pub segments: Vec<LineSegmentInstance>,
+}
+
+impl From<InstancedLines> for Primitive {
+    fn from(batch: InstancedLines) -> Self {
+        Primitive::InstancedLines(batch)
+    }
+}
+
+#[derive(Debug, Clone)]
 #[repr(C)]
 #[expect(missing_docs)]
 pub struct Underline {

@@ -1,9 +1,9 @@
 use crate::{CompositorGpuHint, WgpuAtlas, WgpuContext};
 use bytemuck::{Pod, Zeroable};
 use gpui::{
-    AtlasTextureId, Background, Bounds, DevicePixels, GpuSpecs, MonochromeSprite, Path, Point,
-    PolychromeSprite, PrimitiveBatch, Quad, ScaledPixels, Scene, Shadow, Size, SubpixelSprite,
-    Underline, get_gamma_correction_ratios,
+    AtlasTextureId, Background, Bounds, ContentMask, DevicePixels, GpuSpecs, InstancedLines,
+    InstancedRects, MonochromeSprite, Path, Point, PolychromeSprite, PrimitiveBatch, Quad,
+    ScaledPixels, Scene, Shadow, Size, SubpixelSprite, Underline, get_gamma_correction_ratios,
 };
 use log::warn;
 #[cfg(not(target_family = "wasm"))]
@@ -90,6 +90,8 @@ struct WgpuPipelines {
     mono_sprites: wgpu::RenderPipeline,
     subpixel_sprites: Option<wgpu::RenderPipeline>,
     poly_sprites: wgpu::RenderPipeline,
+    instanced_rects: wgpu::RenderPipeline,
+    instanced_lines: wgpu::RenderPipeline,
     #[allow(dead_code)]
     surfaces: wgpu::RenderPipeline,
 }
@@ -872,7 +874,31 @@ impl WgpuRenderer {
             &layouts.globals,
             &layouts.surfaces,
             wgpu::PrimitiveTopology::TriangleStrip,
-            &[Some(color_target)],
+            &[Some(color_target.clone())],
+            1,
+            &shader_module,
+        );
+
+        let instanced_rects = create_pipeline(
+            "instanced_rects",
+            "vs_instanced_rect",
+            "fs_instanced_rect",
+            &layouts.globals,
+            &layouts.instances,
+            wgpu::PrimitiveTopology::TriangleStrip,
+            &[Some(color_target.clone())],
+            1,
+            &shader_module,
+        );
+
+        let instanced_lines = create_pipeline(
+            "instanced_lines",
+            "vs_instanced_line",
+            "fs_instanced_line",
+            &layouts.globals,
+            &layouts.instances,
+            wgpu::PrimitiveTopology::TriangleStrip,
+            &[Some(color_target.clone())],
             1,
             &shader_module,
         );
@@ -887,6 +913,8 @@ impl WgpuRenderer {
             subpixel_sprites,
             poly_sprites,
             surfaces,
+            instanced_rects,
+            instanced_lines,
         }
     }
 
@@ -1304,6 +1332,16 @@ impl WgpuRenderer {
                             // Not implemented for Linux/wgpu
                             true
                         }
+                        PrimitiveBatch::InstancedRects(range) => self.draw_instanced_rects(
+                            &scene.instanced_rects[range],
+                            &mut instance_offset,
+                            &mut pass,
+                        ),
+                        PrimitiveBatch::InstancedLines(range) => self.draw_instanced_lines(
+                            &scene.instanced_lines[range],
+                            &mut instance_offset,
+                            &mut pass,
+                        ),
                     };
                     if !ok {
                         overflow = true;
@@ -1443,6 +1481,96 @@ impl WgpuRenderer {
             instance_offset,
             pass,
         )
+    }
+
+    fn draw_instanced_rects(
+        &self,
+        batches: &[InstancedRects],
+        instance_offset: &mut u64,
+        pass: &mut wgpu::RenderPass<'_>,
+    ) -> bool {
+        for batch in batches {
+            if batch.rects.is_empty() {
+                continue;
+            }
+
+            let clip = clip_from_content_mask(&batch.content_mask);
+            let mut raw_instances = Vec::with_capacity(batch.rects.len());
+
+            for rect in &batch.rects {
+                raw_instances.push(RectInstanceRaw {
+                    origin: [scaled(rect.bounds.origin.x), scaled(rect.bounds.origin.y)],
+                    size: [
+                        scaled(rect.bounds.size.width),
+                        scaled(rect.bounds.size.height),
+                    ],
+                    color: [rect.color.h, rect.color.s, rect.color.l, rect.color.a],
+                    clip,
+                });
+            }
+
+            let data = unsafe { Self::instance_bytes(&raw_instances) };
+
+            let ok = self.draw_instances(
+                data,
+                raw_instances.len() as u32,
+                &self.resources().pipelines.instanced_rects,
+                instance_offset,
+                pass,
+            );
+
+            if !ok {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn draw_instanced_lines(
+        &self,
+        batches: &[InstancedLines],
+        instance_offset: &mut u64,
+        pass: &mut wgpu::RenderPass<'_>,
+    ) -> bool {
+        for batch in batches {
+            if batch.segments.is_empty() {
+                continue;
+            }
+
+            let clip = clip_from_content_mask(&batch.content_mask);
+            let mut raw_instances = Vec::with_capacity(batch.segments.len());
+
+            for segment in &batch.segments {
+                raw_instances.push(LineInstanceRaw {
+                    p0: [scaled(segment.p0.x), scaled(segment.p0.y)],
+                    p1: [scaled(segment.p1.x), scaled(segment.p1.y)],
+                    width: segment.width,
+                    pad: [0.0; 3],
+                    color: [
+                        segment.color.h,
+                        segment.color.s,
+                        segment.color.l,
+                        segment.color.a,
+                    ],
+                    clip,
+                });
+            }
+
+            let data = unsafe { Self::instance_bytes(&raw_instances) };
+
+            let ok = self.draw_instances(
+                data,
+                raw_instances.len() as u32,
+                &self.resources().pipelines.instanced_lines,
+                instance_offset,
+                pass,
+            );
+
+            if !ok {
+                return false;
+            }
+        }
+        true
     }
 
     fn draw_instances(
@@ -1842,6 +1970,20 @@ impl WgpuRenderer {
     }
 }
 
+#[inline]
+fn scaled(value: ScaledPixels) -> f32 {
+    value.0
+}
+
+#[inline]
+fn clip_from_content_mask(mask: &ContentMask<ScaledPixels>) -> [f32; 4] {
+    let left = scaled(mask.bounds.origin.x);
+    let top = scaled(mask.bounds.origin.y);
+    let right = left + scaled(mask.bounds.size.width);
+    let bottom = top + scaled(mask.bounds.size.height);
+    [left, top, right, bottom]
+}
+
 #[cfg(not(target_family = "wasm"))]
 fn create_surface(
     instance: &wgpu::Instance,
@@ -1901,4 +2043,24 @@ impl RenderingParameters {
             subpixel_enhanced_contrast,
         }
     }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct RectInstanceRaw {
+    pub origin: [f32; 2],
+    pub size: [f32; 2],
+    pub color: [f32; 4],
+    pub clip: [f32; 4],
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct LineInstanceRaw {
+    pub p0: [f32; 2],
+    pub p1: [f32; 2],
+    pub width: f32,
+    pub pad: [f32; 3], // 12-byte padding to align the following `vec4`s to 16 bytes
+    pub color: [f32; 4],
+    pub clip: [f32; 4],
 }

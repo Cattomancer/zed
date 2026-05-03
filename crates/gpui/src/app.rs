@@ -991,6 +991,22 @@ impl App {
         )
     }
 
+    /// Emit an event of the specified type, which can be handled by other entities that have subscribed via `subscribe` methods on their respective contexts.
+    pub fn emit_for<Evt>(&mut self, emitter: EntityId, event: Evt)
+    where
+        Evt: 'static,
+    {
+        let event = self
+            .event_arena
+            .alloc(|| event)
+            .map(|it| it as &mut dyn Any);
+        self.pending_effects.push_back(Effect::Emit {
+            emitter,
+            event_type: TypeId::of::<Evt>(),
+            event,
+        });
+    }
+
     /// Arrange for the given callback to be invoked whenever the given entity emits an event of a given type.
     /// The callback is provided a handle to the emitting entity and a reference to the emitted event.
     pub fn subscribe<T, Event>(
@@ -1775,7 +1791,7 @@ impl App {
     /// Remove the global of the given type from the app context. Does not notify global observers.
     pub fn remove_global<G: Global>(&mut self) -> G {
         let global_type = TypeId::of::<G>();
-        self.push_effect(Effect::NotifyGlobalObservers { global_type });
+        //self.push_effect(Effect::NotifyGlobalObservers { global_type });
         *self
             .globals_by_type
             .remove(&global_type)
@@ -2232,6 +2248,11 @@ impl App {
     /// Gets the cursor style of the currently active drag operation.
     pub fn active_drag_cursor_style(&self) -> Option<CursorStyle> {
         self.active_drag.as_ref().and_then(|drag| drag.cursor_style)
+    }
+
+    /// Sets the active drag manually.
+    pub fn set_active_drag(&mut self, value: AnyDrag) {
+        self.active_drag = Some(value);
     }
 
     /// Stops active drag and clears any related effects.
