@@ -1349,12 +1349,10 @@ fn hue_to_rgb(p: f32, q: f32, t_in: f32) -> f32 {
 // ==========================================
 
 struct InstancedRectRaw {
-    origin: vec2<f32>,
-    size: vec2<f32>,
-    color: vec4<f32>,
+    bounds: Bounds,
+    color: Hsla,
     clip: vec4<f32>,
 }
-
 @group(1) @binding(0) var<storage, read> b_instanced_rects: array<InstancedRectRaw>;
 
 struct InstancedRectVarying {
@@ -1366,18 +1364,15 @@ struct InstancedRectVarying {
 
 @vertex
 fn vs_instanced_rect(@builtin(vertex_index) vertex_id: u32, @builtin(instance_index) instance_id: u32) -> InstancedRectVarying {
-    // Generate (0,0), (1,0), (0,1), (1,1) using GPUI's bitwise trick
     let unit_vertex = vec2<f32>(f32(vertex_id & 1u), 0.5 * f32(vertex_id & 2u));
     let instance = b_instanced_rects[instance_id];
 
-    let px = instance.origin + unit_vertex * instance.size;
+    let px = instance.bounds.origin + unit_vertex * instance.bounds.size;
 
-    // Convert pixel coordinates to NDC (Normalized Device Coordinates)
-    let ndc_x = (px.x / globals.viewport_size.x) * 2.0 - 1.0;
-    let ndc_y = 1.0 - (px.y / globals.viewport_size.y) * 2.0;
+    let device_position = to_device_position_impl(px);
 
     var out = InstancedRectVarying();
-    out.position = vec4<f32>(ndc_x, ndc_y, 0.0, 1.0);
+    out.position = device_position;
     out.color = hsla_to_rgba(instance.color);
     out.clip_bounds = instance.clip;
     out.px = px;
@@ -1403,11 +1398,10 @@ struct InstancedLineRaw {
     p0: vec2<f32>,
     p1: vec2<f32>,
     width: f32,
-    pad: vec3<f32>, // 12-byte padding so color is 16-byte aligned
-    color: vec4<f32>,
+    pad: vec3<f32>, // 12-byte padding so `Hsla` aligns to 16 bytes
+    color: Hsla,
     clip: vec4<f32>,
 }
-
 @group(1) @binding(0) var<storage, read> b_instanced_lines: array<InstancedLineRaw>;
 
 struct InstancedLineVarying {
@@ -1425,7 +1419,6 @@ fn vs_instanced_line(@builtin(vertex_index) vertex_id: u32, @builtin(instance_in
     let dir = instance.p1 - instance.p0;
     let len = length(dir);
 
-    // WGSL select: select(false_val, true_val, condition)
     let tangent = select(vec2<f32>(1.0, 0.0), dir / len, len > 0.0);
     let normal = vec2<f32>(-tangent.y, tangent.x);
 
@@ -1433,12 +1426,8 @@ fn vs_instanced_line(@builtin(vertex_index) vertex_id: u32, @builtin(instance_in
     let signed_offset = (unit_vertex.y - 0.5) * instance.width;
     let px = along + normal * signed_offset;
 
-    // Convert pixel coordinates to NDC
-    let ndc_x = (px.x / globals.viewport_size.x) * 2.0 - 1.0;
-    let ndc_y = 1.0 - (px.y / globals.viewport_size.y) * 2.0;
-
     var out = InstancedLineVarying();
-    out.position = vec4<f32>(ndc_x, ndc_y, 0.0, 1.0);
+    out.position = to_device_position_impl(px);
     out.color = hsla_to_rgba(instance.color);
     out.clip_bounds = instance.clip;
     out.px = px;

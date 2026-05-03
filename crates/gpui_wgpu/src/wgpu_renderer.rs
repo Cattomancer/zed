@@ -1480,8 +1480,9 @@ impl WgpuRenderer {
 
             for rect in &batch.rects {
                 raw_instances.push(RectInstanceRaw {
-                    origin: [scaled(rect.bounds.origin.x), scaled(rect.bounds.origin.y)],
-                    size: [
+                    bounds: [
+                        scaled(rect.bounds.origin.x),
+                        scaled(rect.bounds.origin.y),
                         scaled(rect.bounds.size.width),
                         scaled(rect.bounds.size.height),
                     ],
@@ -2030,8 +2031,7 @@ impl RenderingParameters {
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct RectInstanceRaw {
-    pub origin: [f32; 2],
-    pub size: [f32; 2],
+    pub bounds: [f32; 4],
     pub color: [f32; 4],
     pub clip: [f32; 4],
 }
