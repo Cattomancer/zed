@@ -224,8 +224,16 @@ pub struct EditorSettingsContent {
 
     /// How to display diffs in the editor.
     ///
-    /// Default: stacked
+    /// Default: split
     pub diff_view_style: Option<DiffViewStyle>,
+
+    /// The minimum width (in em-widths) at which the split diff view is used.
+    /// When the editor is narrower than this, the diff view automatically
+    /// switches to unified mode and switches back when the editor is wide
+    /// enough. Set to 0 to disable automatic switching.
+    ///
+    /// Default: 100
+    pub minimum_split_diff_width: Option<f32>,
 }
 
 #[derive(
@@ -786,7 +794,7 @@ pub enum SnippetSortOrder {
 
 /// How to display diffs in the editor.
 ///
-/// Default: stacked
+/// Default: unified
 #[derive(
     Copy,
     Clone,
@@ -805,11 +813,11 @@ pub enum SnippetSortOrder {
 )]
 #[serde(rename_all = "snake_case")]
 pub enum DiffViewStyle {
-    /// Show diffs in a single stacked view.
+    /// Show diffs in a single unified view.
+    Unified,
+    /// Show diffs in a split view.
     #[default]
-    Stacked,
-    /// Show diffs in a side-by-side split view.
-    SideBySide,
+    Split,
 }
 
 /// Default options for buffer and project search items.
