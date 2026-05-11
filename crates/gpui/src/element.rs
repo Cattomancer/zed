@@ -62,11 +62,11 @@ pub trait Element: 'static + IntoElement {
     ///
     /// The global id can in turn be used to access state that's connected to an element with the same id across
     /// frames. This id must be unique among children of the first containing element with an id.
-    fn id(&self) -> Option<ElementId>;
+    fn id(&self) -> Option<ElementId> { None }
 
     /// Source location where this element was constructed, used to disambiguate elements in the
     /// inspector and navigate to their source code.
-    fn source_location(&self) -> Option<&'static panic::Location<'static>>;
+    fn source_location(&self) -> Option<&'static panic::Location<'static>> { None }
 
     /// Before an element can be painted, we need to know where it's going to be and how big it is.
     /// Use this method to request a layout from Taffy and initialize the element's state.

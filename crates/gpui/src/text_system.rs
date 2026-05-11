@@ -139,6 +139,11 @@ impl TextSystem {
             .next()
     }
 
+    /// Get the glyph for this character
+    pub fn glyph_for_char(&self, font_id: FontId, ch: char) -> Option<GlyphId> {
+        self.platform_text_system.glyph_for_char(font_id, ch)
+    }
+
     /// Resolves the specified font, falling back to the default font stack if
     /// the font fails to load.
     ///
@@ -392,6 +397,11 @@ impl WindowTextSystem {
 
     pub(crate) fn truncate_layouts(&self, index: LineLayoutIndex) {
         self.line_layout_cache.truncate_layouts(index)
+    }
+
+    /// Get the glyph for this character
+    pub fn glyph_for_char(&self, font_id: FontId, ch: char) -> Option<GlyphId> {
+        self.platform_text_system.glyph_for_char(font_id, ch)
     }
 
     /// Shape the given line, at the given font_size, for painting to the screen.
