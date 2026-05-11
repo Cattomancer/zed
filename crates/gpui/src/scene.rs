@@ -105,7 +105,7 @@ impl Scene {
             }
             Primitive::Underline(underline) => {
                 underline.order = order;
-                self.underlines.push(*underline);
+                self.underlines.push(underline.clone());
             }
             Primitive::MonochromeSprite(sprite) => {
                 sprite.order = order;
