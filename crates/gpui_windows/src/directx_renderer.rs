@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use crate::util::ResultExt;
+use gpui_util::ResultExt;
 use windows::{
     Win32::{
         Foundation::HWND,
