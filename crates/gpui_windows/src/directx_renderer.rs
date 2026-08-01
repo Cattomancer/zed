@@ -16,7 +16,7 @@ use windows::{
             Dxgi::{Common::*, *},
         },
     },
-    core::{Interface, s},
+    core::{HSTRING, Interface},
 };
 
 use crate::directx_renderer::shader_resources::{RawShaderBytes, ShaderModule, ShaderTarget};
@@ -63,6 +63,7 @@ pub(crate) struct DirectXRendererDevices {
     pub(crate) device: ID3D11Device,
     pub(crate) device_context: ID3D11DeviceContext,
     dxgi_device: Option<IDXGIDevice>,
+    annotation: Option<ID3DUserDefinedAnnotation>,
 }
 
 struct DirectXResources {
@@ -99,6 +100,21 @@ struct DirectXGlobalElements {
     sampler: Option<ID3D11SamplerState>,
 }
 
+struct Annotation<'a>(&'a ID3DUserDefinedAnnotation);
+
+impl<'a> Annotation<'a> {
+    fn new(annotation: &'a ID3DUserDefinedAnnotation, label: HSTRING) -> Self {
+        unsafe { annotation.BeginEvent(&label) };
+        Self(annotation)
+    }
+}
+
+impl Drop for Annotation<'_> {
+    fn drop(&mut self) {
+        unsafe { self.0.EndEvent() };
+    }
+}
+
 struct DirectComposition {
     comp_device: IDCompositionDevice,
     comp_target: IDCompositionTarget,
@@ -121,6 +137,7 @@ impl DirectXRendererDevices {
         } else {
             Some(device.cast().context("Creating DXGI device")?)
         };
+        let annotation = device_context.cast().ok();
 
         Ok(Self {
             adapter: adapter.clone(),
@@ -128,6 +145,7 @@ impl DirectXRendererDevices {
             device: device.clone(),
             device_context: device_context.clone(),
             dxgi_device,
+            annotation,
         })
     }
 }
@@ -320,9 +338,15 @@ impl DirectXRenderer {
 
         self.upload_scene_buffers(scene)?;
 
-        self.pipelines.begin_frame();
-
+        let annotation = self
+            .devices
+            .as_ref()
+            .and_then(|devices| devices.annotation.clone())
+            .filter(|annotation| unsafe { annotation.GetStatus().as_bool() });
         for batch in scene.batches() {
+            let _annotation = annotation
+                .as_ref()
+                .map(|annotation| Annotation::new(annotation, HSTRING::from(batch.label())));
             match batch {
                 PrimitiveBatch::Shadows(range) => self.draw_shadows(range.start, range.len()),
                 PrimitiveBatch::Quads(range) => self.draw_quads(range.start, range.len()),
@@ -345,18 +369,20 @@ impl DirectXRenderer {
                 PrimitiveBatch::InstancedRects(range) => self.draw_instanced_rects(&scene.instanced_rects[range]),
                 PrimitiveBatch::InstancedLines(range) => self.draw_instanced_lines(&scene.instanced_lines[range]),
             }
-            .context(format!(
-                "scene too large:\
-                {} paths, {} shadows, {} quads, {} underlines, {} mono, {} subpixel, {} poly, {} surfaces",
-                scene.paths.len(),
-                scene.shadows.len(),
-                scene.quads.len(),
-                scene.underlines.len(),
-                scene.monochrome_sprites.len(),
-                scene.subpixel_sprites.len(),
-                scene.polychrome_sprites.len(),
-                scene.surfaces.len(),
-            ))?;
+            .with_context(|| {
+                format!(
+                    "scene too large:\
+                    {} paths, {} shadows, {} quads, {} underlines, {} mono, {} subpixel, {} poly, {} surfaces",
+                    scene.paths.len(),
+                    scene.shadows.len(),
+                    scene.quads.len(),
+                    scene.underlines.len(),
+                    scene.monochrome_sprites.len(),
+                    scene.subpixel_sprites.len(),
+                    scene.polychrome_sprites.len(),
+                    scene.surfaces.len(),
+                )
+            })?;
         }
         self.present()
     }
