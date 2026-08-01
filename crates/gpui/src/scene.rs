@@ -525,6 +525,12 @@ impl PrimitiveBatch {
                 )
             }
             Self::Surfaces(range) => format!("surfaces ({})", range.len()),
+            Self::InstancedLines(batch) => {
+                format!("instanced lines ({})", batch.len())
+            }
+            Self::InstancedRects(batch) => {
+                format!("instanced rects ({})", batch.len())
+            }
         }
     }
 }
