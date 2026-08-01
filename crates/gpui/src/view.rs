@@ -8,7 +8,13 @@ use anyhow::Result;
 use collections::FxHashSet;
 use refineable::Refineable;
 use std::mem;
-use std::{any::TypeId, fmt, ops::Range};
+use std::rc::Rc;
+use std::{
+    any::TypeId,
+    fmt,
+    hash::{Hash, Hasher},
+    ops::Range,
+};
 
 /// A dynamically-typed view handle that can be downcast to a specific `Entity<V>`.
 ///
@@ -68,6 +74,13 @@ impl AnyView {
     /// The [`EntityId`] of this view.
     pub fn entity_id(&self) -> EntityId {
         self.entity.entity_id()
+    }
+}
+
+impl Hash for AnyView {
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.entity.hash(state);
     }
 }
 
