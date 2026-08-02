@@ -2079,6 +2079,28 @@ impl Window {
         self.refresh();
     }
 
+    /// Move focus to the element associated with the given [`FocusHandle`] without refreshing.
+    pub fn apply_focus(&mut self, handle: &FocusHandle, cx: &mut App) {
+        if !self.focus_enabled || self.focus == Some(handle.id) {
+            return;
+        }
+
+        self.focus = Some(handle.id);
+        self.focus_generation = self.focus_generation.wrapping_add(1);
+        self.clear_pending_keystrokes();
+
+        // Avoid re-entrant entity updates by deferring observer notifications to the end of the
+        // current effect cycle, and only for this window.
+        let window_handle = self.handle;
+        cx.defer(move |cx| {
+            window_handle
+                .update(cx, |_, window, cx| {
+                    window.pending_input_changed(cx);
+                })
+                .ok();
+        });
+    }
+
     /// Remove focus from all elements within this context's window.
     pub fn blur(&mut self) {
         if !self.focus_enabled {
