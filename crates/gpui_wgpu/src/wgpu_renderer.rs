@@ -2,8 +2,8 @@ use crate::{CompositorGpuHint, WgpuAtlas, WgpuContext};
 use anyhow::{Context as _, Result};
 use bytemuck::{Pod, Zeroable};
 use gpui::{
-    AtlasTextureId, Background, Bounds, DevicePixels, GpuSpecs, Path, Point, PrimitiveBatch,
-    InstancedLines, InstancedRects, ScaledPixels, Scene, Size, get_gamma_correction_ratios,
+    AtlasTextureId, Background, Bounds, ContentMask, DevicePixels, GpuSpecs, Path, Point,
+    PrimitiveBatch, ScaledPixels, Scene, Size, get_gamma_correction_ratios,
 };
 use log::warn;
 #[cfg(not(target_family = "wasm"))]
@@ -154,6 +154,8 @@ struct InstanceBindings {
     monochrome_sprites: InstanceBinding,
     subpixel_sprites: InstanceBinding,
     polychrome_sprites: InstanceBinding,
+    instanced_rects: InstanceBinding,
+    instanced_lines: InstanceBinding,
 }
 
 struct WgpuBindGroupLayouts {
@@ -1062,6 +1064,7 @@ impl WgpuRenderer {
             "fs_instanced_rect",
             &layouts.globals,
             &layouts.instances,
+            None,
             wgpu::PrimitiveTopology::TriangleStrip,
             &[Some(color_target.clone())],
             1,
@@ -1074,6 +1077,7 @@ impl WgpuRenderer {
             "fs_instanced_line",
             &layouts.globals,
             &layouts.instances,
+            None,
             wgpu::PrimitiveTopology::TriangleStrip,
             &[Some(color_target.clone())],
             1,
@@ -1557,16 +1561,42 @@ impl WgpuRenderer {
                     // Surfaces are macOS-only for video playback and are not
                     // implemented by the WGPU renderer.
                     PrimitiveBatch::Surfaces(_surfaces) => {}
-                    PrimitiveBatch::InstancedRects(range) => self.draw_instanced_rects(
-                        &scene.instanced_rects[range],
-                        &mut instance_offset,
-                        &mut pass,
-                    ),
-                    PrimitiveBatch::InstancedLines(range) => self.draw_instanced_lines(
-                        &scene.instanced_lines[range],
-                        &mut instance_offset,
-                        &mut pass,
-                    ),
+                    PrimitiveBatch::InstancedRects(range) => {
+                        let start: usize = scene.instanced_rects[..range.start]
+                            .iter()
+                            .map(|b| b.rects.len())
+                            .sum();
+                        let count: usize = scene.instanced_rects[range]
+                            .iter()
+                            .map(|b| b.rects.len())
+                            .sum();
+                        let instance_range = (start as u32)..((start + count) as u32);
+
+                        self.draw_instances(
+                            &instance_bindings.instanced_rects,
+                            &self.resources().pipelines.instanced_rects,
+                            instance_range,
+                            &mut pass,
+                        );
+                    }
+                    PrimitiveBatch::InstancedLines(range) => {
+                        let start: usize = scene.instanced_lines[..range.start]
+                            .iter()
+                            .map(|b| b.segments.len())
+                            .sum();
+                        let count: usize = scene.instanced_lines[range]
+                            .iter()
+                            .map(|b| b.segments.len())
+                            .sum();
+                        let instance_range = (start as u32)..((start + count) as u32);
+
+                        self.draw_instances(
+                            &instance_bindings.instanced_lines,
+                            &self.resources().pipelines.instanced_lines,
+                            instance_range,
+                            &mut pass,
+                        );
+                    }
                 }
             }
         }
@@ -1582,6 +1612,43 @@ impl WgpuRenderer {
         scene: &Scene,
         instance_offset: &mut u64,
     ) -> Result<InstanceBindings> {
+        let mut raw_rects = Vec::new();
+        for batch in &scene.instanced_rects {
+            let clip = clip_from_content_mask(&batch.content_mask);
+            for rect in &batch.rects {
+                raw_rects.push(RectInstanceRaw {
+                    bounds: [
+                        scaled(rect.bounds.origin.x),
+                        scaled(rect.bounds.origin.y),
+                        scaled(rect.bounds.size.width),
+                        scaled(rect.bounds.size.height),
+                    ],
+                    color: [rect.color.h, rect.color.s, rect.color.l, rect.color.a],
+                    clip,
+                });
+            }
+        }
+
+        let mut raw_lines = Vec::new();
+        for batch in &scene.instanced_lines {
+            let clip = clip_from_content_mask(&batch.content_mask);
+            for segment in &batch.segments {
+                raw_lines.push(LineInstanceRaw {
+                    p0: [scaled(segment.p0.x), scaled(segment.p0.y)],
+                    p1: [scaled(segment.p1.x), scaled(segment.p1.y)],
+                    width: segment.width,
+                    pad: [0.0; 3],
+                    color: [
+                        segment.color.h,
+                        segment.color.s,
+                        segment.color.l,
+                        segment.color.a,
+                    ],
+                    clip,
+                });
+            }
+        }
+
         Ok(InstanceBindings {
             quads: self.write_instance_binding(
                 "quads_bind_group",
@@ -1613,6 +1680,16 @@ impl WgpuRenderer {
                 instance_offset,
                 &scene.polychrome_sprites,
             )?,
+            instanced_rects: self.write_instance_binding(
+                "instanced_rects_bind_group",
+                instance_offset,
+                &raw_rects,
+            )?,
+            instanced_lines: self.write_instance_binding(
+                "instanced_lines_bind_group",
+                instance_offset,
+                &raw_lines,
+            )?,
         })
     }
 
@@ -1638,97 +1715,6 @@ impl WgpuRenderer {
                     },
                 ],
             })
-    }
-
-    fn draw_instanced_rects(
-        &self,
-        batches: &[InstancedRects],
-        instance_offset: &mut u64,
-        pass: &mut wgpu::RenderPass<'_>,
-    ) -> bool {
-        for batch in batches {
-            if batch.rects.is_empty() {
-                continue;
-            }
-
-            let clip = clip_from_content_mask(&batch.content_mask);
-            let mut raw_instances = Vec::with_capacity(batch.rects.len());
-
-            for rect in &batch.rects {
-                raw_instances.push(RectInstanceRaw {
-                    bounds: [
-                        scaled(rect.bounds.origin.x),
-                        scaled(rect.bounds.origin.y),
-                        scaled(rect.bounds.size.width),
-                        scaled(rect.bounds.size.height),
-                    ],
-                    color: [rect.color.h, rect.color.s, rect.color.l, rect.color.a],
-                    clip,
-                });
-            }
-
-            let data = unsafe { Self::instance_bytes(&raw_instances) };
-
-            let ok = self.draw_instances(
-                data,
-                raw_instances.len() as u32,
-                &self.resources().pipelines.instanced_rects,
-                instance_offset,
-                pass,
-            );
-
-            if !ok {
-                return false;
-            }
-        }
-        true
-    }
-
-    fn draw_instanced_lines(
-        &self,
-        batches: &[InstancedLines],
-        instance_offset: &mut u64,
-        pass: &mut wgpu::RenderPass<'_>,
-    ) -> bool {
-        for batch in batches {
-            if batch.segments.is_empty() {
-                continue;
-            }
-
-            let clip = clip_from_content_mask(&batch.content_mask);
-            let mut raw_instances = Vec::with_capacity(batch.segments.len());
-
-            for segment in &batch.segments {
-                raw_instances.push(LineInstanceRaw {
-                    p0: [scaled(segment.p0.x), scaled(segment.p0.y)],
-                    p1: [scaled(segment.p1.x), scaled(segment.p1.y)],
-                    width: segment.width,
-                    pad: [0.0; 3],
-                    color: [
-                        segment.color.h,
-                        segment.color.s,
-                        segment.color.l,
-                        segment.color.a,
-                    ],
-                    clip,
-                });
-            }
-
-            let data = unsafe { Self::instance_bytes(&raw_instances) };
-
-            let ok = self.draw_instances(
-                data,
-                raw_instances.len() as u32,
-                &self.resources().pipelines.instanced_lines,
-                instance_offset,
-                pass,
-            );
-
-            if !ok {
-                return false;
-            }
-        }
-        true
     }
 
     fn draw_instances(

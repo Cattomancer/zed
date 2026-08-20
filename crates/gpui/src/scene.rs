@@ -201,10 +201,8 @@ impl Scene {
             polychrome_sprites_iter: self.polychrome_sprites.iter().peekable(),
             surfaces_start: 0,
             surfaces_iter: self.surfaces.iter().peekable(),
-            instanced_rects: &self.instanced_rects,
             instanced_rects_start: 0,
             instanced_rects_iter: self.instanced_rects.iter().peekable(),
-            instanced_lines: &self.instanced_lines,
             instanced_lines_start: 0,
             instanced_lines_iter: self.instanced_lines.iter().peekable(),
         }
@@ -311,10 +309,8 @@ struct BatchIterator<'a> {
     polychrome_sprites_iter: Peekable<slice::Iter<'a, PolychromeSprite>>,
     surfaces_start: usize,
     surfaces_iter: Peekable<slice::Iter<'a, PaintSurface>>,
-    instanced_rects: &'a [InstancedRects],
     instanced_rects_start: usize,
     instanced_rects_iter: Peekable<slice::Iter<'a, InstancedRects>>,
-    instanced_lines: &'a [InstancedLines],
     instanced_lines_start: usize,
     instanced_lines_iter: Peekable<slice::Iter<'a, InstancedLines>>,
 }
