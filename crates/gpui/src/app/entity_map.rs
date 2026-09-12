@@ -823,6 +823,11 @@ impl<T: 'static> WeakEntity<T> {
             entity_type: PhantomData,
         }
     }
+
+    /// Returns the weak entity reference.
+    pub fn into_any_weak(self) -> AnyWeakEntity {
+        self.any_entity
+    }
 }
 
 impl<T> Hash for WeakEntity<T> {
